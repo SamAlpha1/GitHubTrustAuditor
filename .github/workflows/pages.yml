@@ -1,0 +1,40 @@
+name: Deploy GitHub Trust Auditor
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - site.html.gz.b64
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build static site
+        run: |
+          mkdir -p _site
+          base64 --decode site.html.gz.b64 | gzip --decompress > _site/index.html
+          touch _site/.nojekyll
+          test -s _site/index.html
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5.0.1
