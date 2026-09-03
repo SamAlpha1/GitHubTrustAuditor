@@ -37,17 +37,36 @@ jobs:
           from pathlib import Path
           p = Path('_site/index.html')
           s = p.read_text()
-          helper = "function textCandidate(x){let p=x.path||'',s=+x.size||0;return x.type==='blob'&&s>0&&s<=CFG.maxFileSize&&!SKIP.test(p)&&(EXT.test(p)||/(Dockerfile|Makefile|requirements\\.txt|package-lock\\.json|yarn\\.lock|pnpm-lock\\.yaml)$/i.test(p))}\n"
-          if 'function textCandidate(' not in s:
+          helpers = r'''const SKIP=/(^|\/)(node_modules|vendor|dist|build|coverage|\.next|\.cache|\.git|target|\.venv|venv|__pycache__)(\/|$)/i;
+const EXT=/\.(py|js|mjs|cjs|ts|tsx|jsx|json|yml|yaml|sh|bash|zsh|ps1|bat|cmd|rs|go|java|kt|sol|toml|ini|cfg|conf|env|txt|md|html|htm|xml|rb|php|pl|lua|swift|dart)$/i;
+function textCandidate(x){let p=x.path||'',z=+x.size||0;return x.type==='blob'&&z>0&&z<=CFG.maxFileSize&&!SKIP.test(p)&&(EXT.test(p)||/(Dockerfile|Makefile|requirements\.txt|package-lock\.json|yarn\.lock|pnpm-lock\.yaml)$/i.test(p))}
+'''
+          # site_patch intentionally replaces the scanner block. Re-add the scanner's
+          # file-selection dependencies as one atomic block so Safari never sees a
+          # partially defined runtime.
+          for marker in ('const SKIP=', 'const EXT=', 'function textCandidate('):
+              if marker in s:
+                  # Remove only legacy definitions if present before inserting the canonical block.
+                  pass
+          if 'const SKIP=' not in s or 'const EXT=' not in s or 'function textCandidate(' not in s:
               needle = 'function lineNo(t,i)'
               if needle not in s:
                   raise SystemExit('Build failed: lineNo anchor missing; scanner patch layout changed')
-              s = s.replace(needle, helper + needle, 1)
+              # Strip any partial helper left by an earlier patch.
+              import re
+              s = re.sub(r'function textCandidate\(x\)\{[^\n]*\}\n?', '', s, count=1)
+              s = re.sub(r'const SKIP=[^\n]*\n?', '', s, count=1)
+              s = re.sub(r'const EXT=[^\n]*\n?', '', s, count=1)
+              s = s.replace(needle, helpers + needle, 1)
           p.write_text(s)
           PY
 
           touch _site/.nojekyll
           test -s _site/index.html
+          # Runtime dependency gate: a deployment is forbidden if scanRepo references
+          # a helper/constant that is absent from the generated browser bundle.
+          grep -q 'const SKIP=' _site/index.html
+          grep -q 'const EXT=' _site/index.html
           grep -q 'function textCandidate(x)' _site/index.html
           grep -q 'cand=tree.filter(textCandidate)' _site/index.html
           grep -q 'WALLET_CLIPBOARD_HIJACK' _site/index.html
