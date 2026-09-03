@@ -8,6 +8,7 @@ on:
       - site_patch.py
       - build_site.py
       - post_build_patch.py
+      - ux_language_fix.py
       - .github/workflows/pages.yml
   workflow_dispatch:
 
@@ -33,13 +34,17 @@ jobs:
           set -euo pipefail
           python build_site.py
           python post_build_patch.py _site/index.html
+          python ux_language_fix.py _site/index.html
           test -s _site/index.html
           grep -q "INCOMPLETE SCAN" _site/index.html
           grep -q "scan_status:'unavailable'" _site/index.html
           grep -q "repositories unavailable for inspection" _site/index.html
           grep -q "informational finding(s); no security-score penalty" _site/index.html
           grep -q 'id="mobile-repo-table-fix"' _site/index.html
-          grep -q 'th:nth-child(n+3)' _site/index.html
+          grep -q 'id="langEn"' _site/index.html
+          grep -q 'id="langFa"' _site/index.html
+          grep -q "document.documentElement.dir='ltr'" _site/index.html
+          ! grep -q '<input id="target" disabled' _site/index.html
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
