@@ -11,6 +11,7 @@ on:
       - ux_language_fix.py
       - ux_support_prefill.py
       - overall_score_style.py
+      - cache_rate_limit.py
       - engagement_stats.py
       - .github/workflows/pages.yml
   workflow_dispatch:
@@ -40,6 +41,7 @@ jobs:
           python ux_language_fix.py _site/index.html
           python ux_support_prefill.py _site/index.html
           python overall_score_style.py _site/index.html
+          python cache_rate_limit.py _site/index.html
           python engagement_stats.py _site/index.html
           test -s _site/index.html
           grep -q "INCOMPLETE SCAN" _site/index.html
@@ -62,10 +64,15 @@ jobs:
           grep -q 'This Account’s Overall Score' _site/index.html
           grep -q 'جمع امتیاز این اکانت' _site/index.html
           grep -q 'overallScoreVisual(r.score.total)' _site/index.html
+          grep -q 'GTA_API_CACHE_TTL' _site/index.html
+          grep -q 'GTA_AUDIT_CACHE_TTL' _site/index.html
+          grep -q 'async function auditNetwork(v)' _site/index.html
+          grep -q "mode:'stale-rate-limit'" _site/index.html
           grep -q 'id="engagementStats"' _site/index.html
-          grep -q 'Page_Visits' _site/index.html
-          grep -q 'Star_Clicks' _site/index.html
-          grep -q 'Fork_Clicks' _site/index.html
+          grep -q 'id="visitCount"' _site/index.html
+          grep -q 'id="starClickCount"' _site/index.html
+          grep -q 'id="forkClickCount"' _site/index.html
+          grep -q 'counterapi.com/api' _site/index.html
           ! grep -q '<input id="target" disabled' _site/index.html
           ! grep -q 'id="go" class="btn blue" disabled' _site/index.html
       - uses: actions/configure-pages@v6
