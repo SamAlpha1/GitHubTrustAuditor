@@ -23,7 +23,7 @@ def test_clean_account_can_reach_trusted():
     assert score.verdict == "TRUSTED"
 
 
-def test_exfiltration_caps_at_critical():
+def test_confirmed_exfiltration_caps_at_critical():
     user, repos, results, contrib = base_inputs()
     results[0]["findings"] = [
         Finding(
@@ -36,11 +36,41 @@ def test_exfiltration_caps_at_critical():
             "Sensitive data sent out",
             "[REDACTED]",
             "high",
-        )
+        ),
+        Finding(
+            "WEBHOOK",
+            "MEDIUM",
+            "network",
+            "owner/repo",
+            "x.py",
+            2,
+            "Explicit webhook endpoint present",
+            "[WEBHOOK ENDPOINT]",
+            "high",
+        ),
     ]
     score = score_account(user, repos, results, contrib, False)
     assert score.total <= 15
     assert score.verdict == "CRITICAL"
+
+
+def test_generic_sensitive_network_proximity_is_not_automatically_critical():
+    user, repos, results, contrib = base_inputs()
+    results[0]["findings"] = [
+        Finding(
+            "SECRET_TO_NETWORK",
+            "CRITICAL",
+            "possible-exfiltration",
+            "owner/repo",
+            "x.py",
+            1,
+            "Sensitive source and a generic network operation are nearby",
+            "[REDACTED]",
+            "medium",
+        )
+    ]
+    score = score_account(user, repos, results, contrib, False)
+    assert score.verdict != "CRITICAL"
 
 
 def test_partial_coverage_never_gets_trusted():
