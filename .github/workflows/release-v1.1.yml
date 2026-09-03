@@ -1,0 +1,85 @@
+name: Publish v1.1.0
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/release-v1.1.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Validate reusable Action package
+        shell: bash
+        run: |
+          test -s action.yml
+          test -s GITHUB_ACTION.md
+          test -s examples/github-trust-audit.yml
+          python -m py_compile auditor.py trust_auditor/*.py
+
+      - name: Publish v1.1.0 and update v1 tag
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          cat > /tmp/release-notes.md <<'EOF'
+          # GitHub Trust Auditor v1.1.0
+
+          Adoption and automation release maintained by SamAlpha1.
+
+          ## Highlights
+
+          - Added reusable GitHub Action support through `action.yml`.
+          - Added copy-ready workflow example for auditing a GitHub account from GitHub Actions.
+          - Produces JSON and standalone HTML reports in CI.
+          - Added stable `v1` tag for workflow usage: `SamAlpha1/GitHubTrustAuditor@v1`.
+          - Aligned CLI account scoring with the context-aware web model so informational wallet/network capability does not become a malicious score by itself.
+          - Critical account verdicts now require stronger correlated evidence such as explicit exfiltration behavior or dangerous executable install hooks.
+          - Reusable Action smoke-tested against SamAlpha1 and verified to generate reports successfully.
+          - README now includes web, CLI, Action usage, maintainer links, and the public launch post.
+
+          ## Live app
+
+          https://samalpha1.github.io/GitHubTrustAuditor/
+
+          ## GitHub Action
+
+          ```yaml
+          - uses: SamAlpha1/GitHubTrustAuditor@v1
+            with:
+              username: octocat
+              github-token: ${{ github.token }}
+          ```
+
+          ## Launch post
+
+          https://x.com/samalpha_/status/2095568206484164967
+
+          ## Maintainer
+
+          GitHub: https://github.com/SamAlpha1  
+          X: https://x.com/samalpha_
+          EOF
+
+          if ! gh release view v1.1.0 >/dev/null 2>&1; then
+            gh release create v1.1.0 \
+              --target "$GITHUB_SHA" \
+              --title "GitHub Trust Auditor v1.1.0" \
+              --notes-file /tmp/release-notes.md
+          fi
+
+          git config user.name "SamAlpha1"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -f v1 "$GITHUB_SHA"
+          git push origin refs/tags/v1 --force
