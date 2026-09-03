@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import date, datetime, timedelta, timezone
 
 import requests
@@ -17,6 +17,7 @@ class ContributionStats:
     max_day: int = 0
     uniformity_ratio: float = 0.0
     suspicious_uniformity: bool = False
+    calendar: list[dict[str, int | str]] = field(default_factory=list)
     note: str = ""
 
     def to_dict(self) -> dict:
@@ -26,7 +27,7 @@ class ContributionStats:
 def _parse_cells(text: str) -> dict[date, int]:
     days: dict[date, int] = {}
 
-    # Current GitHub contribution markup has varied over time. Support several forms.
+    # GitHub contribution markup has varied over time. Support several forms.
     patterns = [
         re.compile(r'data-date="(\d{4}-\d{2}-\d{2})"[^>]*data-count="(\d+)"', re.I),
         re.compile(r'data-count="(\d+)"[^>]*data-date="(\d{4}-\d{2}-\d{2})"', re.I),
@@ -71,7 +72,6 @@ def _streaks(days: dict[date, int]) -> tuple[int, int]:
     today = datetime.now(timezone.utc).date()
     cursor = today
     current = 0
-    # GitHub's graph may not have today's update yet, so allow yesterday as the start.
     if days.get(cursor, 0) <= 0:
         cursor -= timedelta(days=1)
     while days.get(cursor, 0) > 0:
@@ -86,7 +86,7 @@ def fetch_contributions(username: str, timeout: int = 20) -> ContributionStats:
         response = requests.get(
             url,
             timeout=timeout,
-            headers={"User-Agent": "GitHubTrustAuditor/1.0", "Accept": "text/html"},
+            headers={"User-Agent": "GitHubTrustAuditor/1.1", "Accept": "text/html"},
         )
         if response.status_code >= 400:
             return ContributionStats(note=f"Contribution endpoint returned HTTP {response.status_code}")
@@ -105,8 +105,11 @@ def fetch_contributions(username: str, timeout: int = 20) -> ContributionStats:
         else:
             uniformity = 0.0
 
-        # Uniformity is informational only; many legitimate workflows are repetitive.
         suspicious = active_days >= 90 and uniformity >= 0.90
+        calendar = [
+            {"date": day.isoformat(), "count": int(count)}
+            for day, count in sorted(days.items())
+        ]
         return ContributionStats(
             available=True,
             total=total,
@@ -116,6 +119,7 @@ def fetch_contributions(username: str, timeout: int = 20) -> ContributionStats:
             max_day=max_day,
             uniformity_ratio=round(uniformity, 3),
             suspicious_uniformity=suspicious,
+            calendar=calendar,
             note=(
                 "Highly uniform contribution counts; treat as an informational pattern, not evidence of wrongdoing."
                 if suspicious

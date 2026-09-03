@@ -1,148 +1,246 @@
 # GitHub Trust Auditor
 
-GitHub Trust Auditor is a defensive, read-only security and trust analyzer for GitHub accounts and repositories. It inventories repositories, scans source code for credential-theft and data-exfiltration indicators, reviews repository hygiene and activity signals, analyzes the GitHub contribution graph as a *minor* reputation signal, and produces terminal, JSON, and HTML reports.
+A defensive, read-only GitHub account and repository security auditor with a **bilingual English/Persian web interface** and a CLI.
 
-> **Important:** A clean report is not proof that a person is trustworthy, and a green contribution graph is not proof of safety. The tool scores observable repository/code signals only. Private repositories are scanned **only when the supplied GitHub token is already authorized to read them**.
+Paste a GitHub username, profile URL, or repository URL. The auditor inventories the account's visible repositories, statically scans source code for credential-theft and data-exfiltration indicators, reviews wallet and install behavior, evaluates repository quality/history, includes GitHub contribution activity as a small reputation signal, and returns a 0–100 score with a clear risk verdict.
 
-## What it checks
+> A clean report is not proof that a person is trustworthy, and a red report is not proof that a person is a scammer. The verdict describes **observable technical risk in the scanned coverage**. Private third-party repositories cannot be inspected without legitimate access.
 
-| Area | Examples | Weight / behavior |
-|---|---|---|
-| Seed / mnemonic handling | prompts, variables, files, suspicious 12/15/18/21/24-word handling | Critical when paired with exfiltration |
-| Private keys | EVM/Solana-style private key handling, secret literals, `.env` access | Critical/High |
-| Passwords / tokens | password, API key, session, cookie and token collection | High/Critical |
-| Data exfiltration | `fetch`, `axios`, `requests`, webhook, Telegram/Discord, sockets | Critical when sensitive data flows to a sink |
-| Clipboard abuse | reading clipboard, wallet-address replacement patterns | High |
-| Wallet approvals | unlimited approvals, permit/allowance patterns | High warning; context required |
-| Hidden transactions | transaction/sign/send behavior not reflected in obvious docs | High warning |
-| Install hooks | `preinstall`, `postinstall`, `curl|bash`, PowerShell download/execute | High/Critical |
-| Obfuscation | `eval`, `exec`, Base64 decoding + execution, packed scripts | Medium/High |
-| Dependencies | git/tarball deps, unpinned deps, suspicious install scripts | Medium |
-| GitHub Actions | secrets used in shell/network steps, broad workflow permissions | High |
-| Secret exposure | hard-coded tokens/keys/mnemonic-shaped secrets | Critical; values never printed |
-| Repository history | age, archive status, forks, stars, recent activity | Reputation-only |
-| README / license / security | documentation, license, `SECURITY.md`, CI | Hygiene score |
-| Contributions | active days, total contributions, streak/distribution | **Max 8 points; never overrides security findings** |
+## Web UI — easiest way
 
-## Verdicts
-
-- `TRUSTED` — 85–100 and no High/Critical findings
-- `LOW RISK` — 70–84 and no Critical findings
-- `CAUTION` — 40–69, or meaningful Medium/High findings
-- `HIGH RISK` — 16–39, or serious security indicators
-- `CRITICAL` — 0–15, or likely credential theft / secret exfiltration
-
-A Critical finding triggers a visible terminal alarm, terminal bell where supported, and exit code `2`.
-
-## Install
+The web interface is designed for normal users: enter a username or GitHub link and press **SCAN GITHUB**.
 
 ```bash
 git clone https://github.com/SamAlpha1/GitHubTrustAuditor.git
 cd GitHubTrustAuditor
+
 python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+source .venv/bin/activate
+# Windows: .venv\Scripts\activate
+
 pip install -r requirements.txt
+python web_server.py
 ```
 
-## Audit a public GitHub account
+Open:
+
+```text
+http://127.0.0.1:8787
+```
+
+Accepted input examples:
+
+```text
+octocat
+@octocat
+github.com/octocat
+https://github.com/octocat
+https://github.com/octocat/Hello-World
+```
+
+A repository URL is treated as an instruction to audit the **repository owner/account**, not just that one repository.
+
+### Web verdict colors and alarms
+
+| Verdict | Color | Browser alert | Meaning |
+|---|---|---|---|
+| `TRUSTED` | Green | None | No significant malicious indicators in complete scanned coverage |
+| `LOW RISK` | Light green | One short tone | No critical signal, but minor issues exist |
+| `CAUTION` | Amber | Two warning tones | Meaningful findings require manual review |
+| `HIGH RISK` | Orange/red | Repeated warning tones | Serious behavior; possible scam-like technical patterns |
+| `CRITICAL` | Red | Siren-style alternating tones | Critical credential theft, exfiltration, or dangerous execution indicators |
+
+For severe results the UI uses wording such as **“SEVERE RISK • POSSIBLE SCAM BEHAVIOR”** or **“CRITICAL SCAM RISK”**. This is intentionally a *risk label*, not a factual accusation about a person's identity or intent.
+
+The interface can switch instantly between **English** and **فارسی**.
+
+## What it checks
+
+| Area | Examples | Typical severity |
+|---|---|---|
+| Seed / mnemonic handling | prompts, variables, suspicious recovery-phrase handling | High/Critical |
+| Private keys | wallet secret prompts, secret literals, `.env` access | High/Critical |
+| Passwords / tokens | passwords, API keys, cookies, session/auth tokens | High/Critical |
+| Secret exfiltration | sensitive source + HTTP/Webhook/Telegram/Discord/socket sink | Critical when correlated |
+| Clipboard abuse | clipboard reads/writes, wallet-address replacement patterns | Medium/High |
+| Wallet approvals | unlimited approvals, permit/allowance patterns | High |
+| Wallet transactions | signing/sending behavior and undocumented transaction capability | Medium/High |
+| Install hooks | `preinstall`, `postinstall`, download-and-execute chains | High/Critical |
+| Obfuscation | `eval`, `exec`, Base64 decode + execute, encoded PowerShell | Medium/High |
+| Dependencies | remote/VCS dependencies, unpinned Python packages | Low/Medium |
+| GitHub Actions | secrets in network-capable shell commands, suspicious CI behavior | High |
+| Secret exposure | committed keys/tokens/mnemonic-shaped values and sensitive filenames | High/Critical |
+| Repository hygiene | README, license, `SECURITY.md`, CI, scan completeness | Up to 20 points |
+| History & reputation | account age, original repos, stars/forks, recent activity | Up to 12 points |
+| Contribution graph | total contributions, active days, streaks, unusual uniformity | **Up to 8 points only** |
+
+Serious security findings always override social/reputation signals. A large number of green contribution squares can never cancel a Critical security finding.
+
+## GitHub “green squares”
+
+When GitHub's public contribution calendar is available, the web report shows:
+
+- contribution total
+- active days
+- longest streak
+- current streak
+- contribution calendar cells
+- unusually uniform activity as an **informational** signal only
+
+Contribution activity is capped at **8%** of the account score.
+
+A sparse public graph is not automatically suspicious: legitimate developers may keep work private, contribute in organizations, or hide private contribution activity.
+
+## Risk table
+
+The web report groups findings into easy-to-read rows:
+
+1. Seed / private key / password theft
+2. Data exfiltration & webhooks
+3. Clipboard & wallet-address replacement
+4. Wallet approvals & transactions
+5. Install scripts & obfuscation
+6. Dependencies & CI security
+7. Documentation & repository hygiene
+8. Contribution-graph signal
+
+Below that, every scanned repository receives its own score and risk badge, followed by the highest-value file/line evidence.
+
+Potential secret values are redacted from reports.
+
+## Safe Star / Fork recommendation
+
+A **Star/Fork** recommendation is shown only when:
+
+- account verdict is `TRUSTED`
+- scan coverage is complete
+- there are no High/Critical findings
+- the recommended repository itself scores at least 85
+- it is public, complete, and not archived
+
+The wording is deliberately conditional:
+
+> If the project is useful to you, consider starring or forking it.
+
+A high score never automatically means a user should run unknown code with a valuable wallet.
+
+## Public account scan
+
+The web server can scan public repositories without asking the visitor for credentials.
+
+For higher GitHub API limits, the server operator can set a **read-only** GitHub token in the environment:
 
 ```bash
-python auditor.py octocat
+export GITHUB_TOKEN="READ_ONLY_TOKEN"
+python web_server.py
 ```
 
-For higher API limits, use a token with the **minimum required read-only permissions**:
-
-```bash
-export GITHUB_TOKEN="your_read_only_token"
-python auditor.py octocat
-```
-
-Never paste a seed phrase or wallet private key into this tool. It does not need them.
+Do not expose that token in browser JavaScript or commit it to the repository.
 
 ## Authorized private-repository scan
 
-Private repositories are not public information. They are included only if the token already has read permission and you explicitly opt in:
+Private repositories are not public information. They may be scanned only when the server operator already has legitimate read permission.
 
 ```bash
-export GITHUB_TOKEN="authorized_read_only_token"
+export GITHUB_TOKEN="AUTHORIZED_READ_ONLY_TOKEN"
+python web_server.py --allow-private
+```
+
+The default web UI does not request a visitor's GitHub token, seed phrase, wallet key, or password.
+
+Private repositories belonging to an unrelated third party cannot be discovered or audited without authorized access.
+
+## CLI
+
+The original CLI remains available.
+
+Public account:
+
+```bash
+python auditor.py octocat
+```
+
+Save JSON and HTML reports:
+
+```bash
+python auditor.py octocat --json report.json --html report.html
+```
+
+Authorized private coverage:
+
+```bash
+export GITHUB_TOKEN="AUTHORIZED_READ_ONLY_TOKEN"
 python auditor.py YOUR_GITHUB_USERNAME --include-private
 ```
 
-The report explicitly records whether private coverage was requested, authorized, complete, partial, or unavailable.
+## Score model
 
-## Reports
-
-```bash
-python auditor.py USERNAME --json report.json --html report.html
-```
-
-The terminal report includes a score table per repository and an account summary. Findings contain the rule, severity, file and line number, but secret values are redacted.
-
-Example summary:
+Maximum score:
 
 ```text
-GitHub Trust Auditor — example
-Coverage: 18 public repos, 0 private repos (not requested)
-
-Security                 55/60
-Repository hygiene       17/20
-History & reputation     10/12
-Contribution activity     6/8
-TOTAL                    88/100
-VERDICT                  TRUSTED
-
-No significant malicious indicators detected in the scanned coverage.
-Recommendation: review the project for your own use case; if it is useful, consider starring or forking it.
+Security                 60
+Repository hygiene       20
+History & reputation     12
+Contribution activity     8
+---------------------------
+TOTAL                    100
 ```
 
-Critical example:
+Verdict bands:
 
 ```text
-🚨🚨🚨 CRITICAL SECURITY ALARM 🚨🚨🚨
-Possible credential collection + outbound exfiltration detected.
-Repository: owner/repo
-File: src/example.js:42
-Rule: SECRET_TO_NETWORK
-Action: DO NOT RUN, DO NOT CONNECT A WALLET, DO NOT ENTER A SEED/PRIVATE KEY.
+85–100   TRUSTED
+70–84    LOW RISK
+40–69    CAUTION
+16–39    HIGH RISK
+0–15     CRITICAL
 ```
 
-## Contribution graph / “green squares”
+Critical exfiltration or dangerous install behavior can cap the final score regardless of reputation.
 
-The auditor reads GitHub's public contribution-calendar endpoint when available and summarizes:
+## Static, defensive design
 
-- total contributions reported by the graph
-- active days
-- longest and current streak
-- activity distribution and concentration
-- suspiciously uniform patterns (informational only)
+The target repository code is **never executed** by the auditor.
 
-Contribution activity is deliberately capped at **8% of the score**. A malicious repository can belong to an active account, and an excellent developer can have a sparse public graph because private contributions may be hidden.
+It does not:
 
-## Scanning model
+- install target dependencies
+- run target shell scripts
+- open a target wallet
+- sign transactions
+- connect to target RPC services
+- ask for a seed phrase
+- ask for a private wallet key
+- submit credentials to a target project
 
-The scanner is static and read-only. It does **not** execute target code, install target dependencies, open target binaries, connect wallets, sign transactions, or submit secrets. It scans textual files using deterministic rules plus cross-signal correlation. A suspicious source (`seed`, `private key`, `password`, token, clipboard) combined with an outbound sink (`HTTP POST`, webhook, socket, Telegram/Discord API) receives much higher severity than either signal alone.
+It reads accessible GitHub metadata and text blobs and performs deterministic static analysis plus cross-signal correlation.
 
 ## Limitations
 
-- Static analysis can have false positives and false negatives.
-- Minified, encrypted, generated or binary payloads may require separate reverse engineering.
-- Deleted history, releases, external downloads and runtime-only behavior can hide risk.
-- GitHub API rate limits may cause partial coverage; the report flags this instead of claiming a complete scan.
-- Private repositories belonging to third parties are not discoverable without legitimate access.
-- The verdict describes observed technical risk, **not a factual claim that a person is a scammer or a good person**.
+- Static analysis can produce false positives and false negatives.
+- Minified, encrypted, generated, or binary payloads may need independent reverse engineering.
+- Runtime behavior can differ from source.
+- Deleted history, external downloads, releases, or remote dependencies can hide risk.
+- API rate limits can make coverage partial; the report marks that explicitly.
+- Reputation metrics are context, not proof of honesty.
+- The term `SCAM RISK` in the UI describes technical risk indicators, not a legal/factual determination about a person.
 
-## Safe recommendation policy
-
-The tool recommends `Star/Fork` only when no Critical/High indicators are present and the score passes the configured trust threshold. The wording is intentionally: **“If the project is useful to you, consider starring or forking it.”** It never treats social metrics as proof of safety.
-
-## Exit codes
+## Exit codes — CLI
 
 | Code | Meaning |
 |---:|---|
-| 0 | scan completed; no Critical alarm |
-| 1 | incomplete scan / API or input error |
-| 2 | Critical security alarm |
+| `0` | Scan completed; no Critical alarm |
+| `1` | Input/API problem or incomplete coverage |
+| `2` | Critical security alarm |
+
+## Security policy
+
+See [`SECURITY.md`](SECURITY.md).
+
+## License
+
+MIT.
 
 ## Maintainer
 
-SamAlpha1
+**SamAlpha1**

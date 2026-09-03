@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#0759ff">
+  <title>GitHub Trust Auditor</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="GitHub Trust Auditor home">
+        <span class="brand-mark" aria-hidden="true">◈</span>
+        <span>GitHub Trust Auditor</span>
+      </a>
+      <button id="langToggle" class="lang-toggle" type="button" aria-label="Change language">FA</button>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="eyebrow" data-i18n="eyebrow">DEFENSIVE GITHUB SECURITY CHECK</div>
+        <h1 data-i18n="title">Check a GitHub account before you trust its code.</h1>
+        <p class="hero-copy" data-i18n="subtitle">
+          Paste a username, profile URL, or repository URL. The auditor checks public repositories for credential theft,
+          secret exfiltration, dangerous wallet behavior, install hooks, obfuscation, repository quality, and contribution activity.
+        </p>
+
+        <form id="scanForm" class="scan-card">
+          <label for="targetInput" data-i18n="inputLabel">GitHub username or URL</label>
+          <div class="input-row">
+            <div class="input-wrap">
+              <span class="input-prefix" aria-hidden="true">github.com/</span>
+              <input
+                id="targetInput"
+                name="target"
+                type="text"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="octocat or https://github.com/octocat"
+                required
+              >
+            </div>
+            <button id="scanButton" class="primary-button" type="submit">
+              <span class="button-icon" aria-hidden="true">⌁</span>
+              <span data-i18n="scan">SCAN GITHUB</span>
+            </button>
+          </div>
+          <div class="helper-row">
+            <span class="helper-dot"></span>
+            <span data-i18n="helper">Read-only scan. Never enter a seed phrase, private key, or password.</span>
+          </div>
+        </form>
+
+        <div class="trust-strip">
+          <div><strong>60%</strong><span data-i18n="securityWeight">Security signals</span></div>
+          <div><strong>20%</strong><span data-i18n="hygieneWeight">Repository hygiene</span></div>
+          <div><strong>12%</strong><span data-i18n="historyWeight">History & reputation</span></div>
+          <div><strong>8%</strong><span data-i18n="contributionWeight">Contribution graph</span></div>
+        </div>
+      </section>
+
+      <section id="loadingPanel" class="loading-panel hidden" aria-live="polite">
+        <div class="loader-ring" aria-hidden="true"></div>
+        <div>
+          <strong id="loadingTitle" data-i18n="scanning">Scanning GitHub account…</strong>
+          <p id="loadingStage" data-i18n="stageRepos">Discovering repositories and account history</p>
+        </div>
+      </section>
+
+      <section id="errorPanel" class="error-panel hidden" role="alert">
+        <span class="error-icon">!</span>
+        <div>
+          <strong data-i18n="scanFailed">Scan failed</strong>
+          <p id="errorText"></p>
+        </div>
+      </section>
+
+      <section id="results" class="results hidden" aria-live="polite">
+        <div id="riskBanner" class="risk-banner">
+          <div class="risk-left">
+            <div id="riskSignal" class="risk-signal">SECURITY STATUS</div>
+            <h2 id="riskTitle">—</h2>
+            <p id="riskMessage">—</p>
+          </div>
+          <div class="score-orb" id="scoreOrb">
+            <span id="totalScore">—</span>
+            <small>/100</small>
+          </div>
+        </div>
+
+        <div class="profile-card">
+          <img id="profileAvatar" class="avatar" alt="">
+          <div class="profile-main">
+            <div class="profile-title-row">
+              <div>
+                <span class="small-label" data-i18n="auditedAccount">AUDITED ACCOUNT</span>
+                <h3 id="profileName">@—</h3>
+              </div>
+              <a id="openProfile" class="ghost-button" href="#" target="_blank" rel="noopener noreferrer" data-i18n="openProfile">Open GitHub ↗</a>
+            </div>
+            <div class="profile-stats">
+              <div><span id="publicRepos">—</span><small data-i18n="publicRepos">Public repos</small></div>
+              <div><span id="followers">—</span><small data-i18n="followers">Followers</small></div>
+              <div><span id="accountAge">—</span><small data-i18n="accountAge">Account age</small></div>
+              <div><span id="coverageValue">—</span><small data-i18n="coverage">Scan coverage</small></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-heading">
+          <div>
+            <span class="small-label" data-i18n="scoreBreakdownLabel">SCORE BREAKDOWN</span>
+            <h3 data-i18n="scoreBreakdown">Why this account got this score</h3>
+          </div>
+        </div>
+
+        <div class="score-grid">
+          <article class="metric-card">
+            <div class="metric-icon">🔐</div>
+            <div><span data-i18n="security">Security</span><strong id="securityScore">—</strong></div>
+            <small>/60</small>
+          </article>
+          <article class="metric-card">
+            <div class="metric-icon">✓</div>
+            <div><span data-i18n="hygiene">Repository hygiene</span><strong id="hygieneScore">—</strong></div>
+            <small>/20</small>
+          </article>
+          <article class="metric-card">
+            <div class="metric-icon">⌛</div>
+            <div><span data-i18n="history">History & reputation</span><strong id="historyScore">—</strong></div>
+            <small>/12</small>
+          </article>
+          <article class="metric-card">
+            <div class="metric-icon">▦</div>
+            <div><span data-i18n="contributions">Contribution graph</span><strong id="contributionScore">—</strong></div>
+            <small>/8</small>
+          </article>
+        </div>
+
+        <div class="section-heading compact">
+          <div>
+            <span class="small-label" data-i18n="securityRowsLabel">SECURITY CHECKS</span>
+            <h3 data-i18n="securityRows">Detailed risk table</h3>
+          </div>
+        </div>
+        <div id="riskRows" class="risk-rows"></div>
+
+        <div class="section-heading compact">
+          <div>
+            <span class="small-label" data-i18n="greenSquaresLabel">CONTRIBUTION GRAPH</span>
+            <h3 data-i18n="greenSquares">GitHub “green squares” activity</h3>
+          </div>
+        </div>
+        <div class="contribution-card">
+          <div class="contribution-stats">
+            <div><strong id="contribTotal">—</strong><span data-i18n="totalContributions">Contributions</span></div>
+            <div><strong id="activeDays">—</strong><span data-i18n="activeDays">Active days</span></div>
+            <div><strong id="longestStreak">—</strong><span data-i18n="longestStreak">Longest streak</span></div>
+            <div><strong id="currentStreak">—</strong><span data-i18n="currentStreak">Current streak</span></div>
+          </div>
+          <div id="heatmap" class="heatmap" aria-hidden="true"></div>
+          <p id="contributionNote" class="muted-note"></p>
+        </div>
+
+        <div class="section-heading compact">
+          <div>
+            <span class="small-label" data-i18n="repoLabel">REPOSITORY AUDIT</span>
+            <h3 data-i18n="repoTitle">Repository-by-repository score</h3>
+          </div>
+          <span id="repoCountBadge" class="count-badge">0</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th data-i18n="repo">Repository</th>
+                <th data-i18n="repoScore">Score</th>
+                <th data-i18n="risk">Risk</th>
+                <th data-i18n="stars">Stars</th>
+                <th data-i18n="forks">Forks</th>
+                <th data-i18n="files">Files</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="repoTableBody"></tbody>
+          </table>
+        </div>
+
+        <div id="findingsSection" class="findings-section hidden">
+          <div class="section-heading compact">
+            <div>
+              <span class="small-label" data-i18n="findingsLabel">FLAGGED EVIDENCE</span>
+              <h3 data-i18n="findingsTitle">Files that need review</h3>
+            </div>
+            <span id="findingCountBadge" class="count-badge danger">0</span>
+          </div>
+          <div id="findingList" class="finding-list"></div>
+        </div>
+
+        <div id="supportCard" class="support-card hidden">
+          <div class="support-icon">★</div>
+          <div class="support-copy">
+            <span class="small-label" data-i18n="supportLabel">CLEAN SCAN</span>
+            <h3 data-i18n="supportTitle">Useful and clean? Support the developer.</h3>
+            <p data-i18n="supportCopy">
+              No significant malicious indicators were detected in the scanned coverage. If you actually find a project useful,
+              consider starring or forking it on GitHub.
+            </p>
+            <div id="supportButtons" class="support-buttons"></div>
+          </div>
+        </div>
+
+        <div class="coverage-note">
+          <strong data-i18n="important">Important</strong>
+          <p id="coverageNote" data-i18n="coverageNote">
+            This is static technical analysis, not proof that a person is honest or a scammer. Private third-party repositories
+            cannot be inspected without legitimate access.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>GitHub Trust Auditor</span>
+      <span>•</span>
+      <span>SamAlpha1</span>
+      <span>•</span>
+      <span data-i18n="footer">Defensive, read-only analysis</span>
+    </footer>
+  </div>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>
