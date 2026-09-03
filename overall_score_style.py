@@ -18,8 +18,8 @@ def main() -> None:
     s = p.read_text()
 
     old = '<div id="score" class="orb">—</div>'
-    new = '''<div class="overallScoreBox" aria-label="Overall account score">
-  <div class="overallScoreLabel"><span class="score-en">Overall Score</span><span class="score-fa">امتیاز کلی</span></div>
+    new = '''<div class="overallScoreBox" aria-label="This account overall score">
+  <div class="overallScoreLabel"><span class="score-en">This Account’s Overall Score</span><span class="score-fa">جمع امتیاز این اکانت</span></div>
   <div id="score" class="orb overallScoreOrb">—</div>
 </div>'''
     if old not in s:
@@ -27,12 +27,12 @@ def main() -> None:
     s = s.replace(old, new, 1)
 
     css = r'''<style id="overall-score-style">
-.overallScoreBox{display:grid;justify-items:center;align-content:center;gap:7px;min-width:120px}
-.overallScoreLabel{font-size:10px;font-weight:950;letter-spacing:.12em;text-transform:uppercase;color:var(--score-color,#07945e);transition:color .25s ease}
+.overallScoreBox{display:grid;justify-items:center;align-content:center;gap:7px;min-width:150px}
+.overallScoreLabel{max-width:170px;text-align:center;font-size:10px;font-weight:950;letter-spacing:.08em;text-transform:uppercase;color:var(--score-color,#07945e);transition:color .25s ease}
 .score-fa{display:none;text-transform:none;letter-spacing:0;font-size:12px}
 .fa-mode .score-en{display:none!important}.fa-mode .score-fa{display:inline!important;direction:rtl}
 .overallScoreOrb{color:var(--score-color,#07945e)!important;border-color:var(--score-color,#07945e)!important;background:var(--score-bg,#effbf6)!important;box-shadow:0 0 0 5px var(--score-ring,#d8f6e8);transition:color .3s ease,border-color .3s ease,background .3s ease,box-shadow .3s ease}
-@media(max-width:720px){.overallScoreBox{min-width:92px}.overallScoreLabel{font-size:9px}.score-fa{font-size:10px}}
+@media(max-width:720px){.overallScoreBox{min-width:108px}.overallScoreLabel{max-width:120px;font-size:8px}.score-fa{font-size:10px}}
 </style>'''
     if '</head>' not in s:
         fail("head anchor missing")
@@ -52,7 +52,7 @@ def main() -> None:
   let ring=`hsl(${h.toFixed(1)} 68% 88%)`;
   let box=document.querySelector('.overallScoreBox'),orb=document.getElementById('score');
   if(box){box.style.setProperty('--score-color',color);box.style.setProperty('--score-bg',bg);box.style.setProperty('--score-ring',ring)}
-  if(orb){orb.setAttribute('title',`${Math.round(n)}/100 Overall Score`);orb.setAttribute('aria-label',`${Math.round(n)} out of 100 overall score`)}
+  if(orb){orb.setAttribute('title',`${Math.round(n)}/100 This Account’s Overall Score`);orb.setAttribute('aria-label',`${Math.round(n)} out of 100 overall account score`)}
 }
 '''
     anchor = 'function render(r){'
@@ -69,8 +69,8 @@ def main() -> None:
     required = [
         'id="overall-score-style"',
         'class="overallScoreBox"',
-        'Overall Score',
-        'امتیاز کلی',
+        'This Account’s Overall Score',
+        'جمع امتیاز این اکانت',
         'function overallScoreVisual(raw)',
         'overallScoreVisual(r.score.total)',
         'if(n>=90)h=128',
