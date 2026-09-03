@@ -17,28 +17,24 @@ def main() -> None:
     p = Path(sys.argv[1])
     s = p.read_text()
 
-    # Replace the ambiguous single toggle with explicit language choices.
     old_header = '<header class="top"><div class="brand"><b>◈</b> GitHub Trust Auditor</div><button id="lang" class="ghost">FA</button></header>'
     new_header = '<header class="top"><div class="brand"><b>◈</b> GitHub Trust Auditor</div><div class="langSwitch" role="group" aria-label="Language"><button id="langEn" type="button" class="langChoice">English</button><button id="langFa" type="button" class="langChoice">فارسی</button></div></header>'
     if old_header not in s:
         fail("language header anchor missing")
     s = s.replace(old_header, new_header, 1)
 
-    # Keep the visual layout LTR in both languages. Persian text itself is RTL.
     old_lang = "function setLang(v){lang=v;localStorage.setItem('gta_lang',v);document.documentElement.lang=v;document.documentElement.dir=v==='fa'?'rtl':'ltr';$$('[data-t]').forEach(e=>{const k=e.dataset.t;if(T[v][k])e.textContent=T[v][k]});$('#lang').textContent=v==='fa'?'EN':'FA'}\nsetLang(lang);$('#lang').onclick=()=>setLang(lang==='en'?'fa':'en');"
-    new_lang = "function setLang(v){lang=v==='fa'?'fa':'en';localStorage.setItem('gta_lang',lang);document.documentElement.lang=lang;document.documentElement.dir='ltr';document.body.classList.toggle('fa-mode',lang==='fa');$$('[data-t]').forEach(e=>{const k=e.dataset.t;if(T[lang][k])e.textContent=T[lang][k]});$('#langEn').classList.toggle('active',lang==='en');$('#langFa').classList.toggle('active',lang==='fa');$('#visitor').placeholder=lang==='fa'?'یوزرنیم GitHub خودت برای تأیید':'Your GitHub username for verification';$('#target').placeholder=lang==='fa'?'یوزرنیم یا لینک GitHub برای اسکن':'GitHub username or profile URL to scan';syncEvidenceToggle?.()}\nsetLang(lang);$('#langEn').onclick=()=>setLang('en');$('#langFa').onclick=()=>setLang('fa');"
+    new_lang = "function setLang(v){lang=v==='fa'?'fa':'en';localStorage.setItem('gta_lang',lang);document.documentElement.lang=lang;document.documentElement.dir='ltr';document.body.classList.toggle('fa-mode',lang==='fa');$$('[data-t]').forEach(e=>{const k=e.dataset.t;if(T[lang][k])e.textContent=T[lang][k]});$('#langEn').classList.toggle('active',lang==='en');$('#langFa').classList.toggle('active',lang==='fa');$('#visitor').placeholder=lang==='fa'?'یوزرنیم GitHub خودت برای تأیید':'Your GitHub username for verification';$('#target').placeholder=lang==='fa'?'یوزرنیم یا لینک GitHub برای اسکن':'GitHub username or profile URL to scan'}\nsetLang(lang);$('#langEn').onclick=()=>setLang('en');$('#langFa').onclick=()=>setLang('fa');"
     if old_lang not in s:
         fail("setLang anchor missing")
     s = s.replace(old_lang, new_lang, 1)
 
-    # Let users type the target account at any time. Only the Scan button remains gated.
     old_target = '<form id="form" class="row"><input id="target" disabled placeholder="octocat or https://github.com/octocat" required><button id="go" class="btn blue" disabled data-t="scan">SCAN GITHUB</button></form>'
     new_target = '<form id="form" class="row"><input id="target" autocomplete="off" placeholder="GitHub username or profile URL to scan" required><button id="go" class="btn blue" disabled data-t="scan">SCAN GITHUB</button></form>'
     if old_target not in s:
         fail("target input anchor missing")
     s = s.replace(old_target, new_target, 1)
 
-    # Do not visually disable the whole scanner card; the Scan button itself communicates the gate.
     s = s.replace('<section id="scanner" class="card locked">', '<section id="scanner" class="card">', 1)
 
     css = r'''<style id="language-layout-fix">
@@ -60,7 +56,6 @@ def main() -> None:
         fail("head anchor missing")
     s = s.replace('</head>', css + '\n</head>', 1)
 
-    # Runtime assertions: language selection must be explicit and target input must not be disabled.
     required = [
         'id="langEn"',
         'id="langFa"',
@@ -81,6 +76,8 @@ def main() -> None:
         fail("target input is still disabled")
     if "$('#lang').onclick" in s or 'id="lang" class="ghost"' in s:
         fail("legacy ambiguous language toggle still present")
+    if 'syncEvidenceToggle?.()' in s:
+        fail("unsafe early evidence helper call still present")
 
     p.write_text(s)
 
