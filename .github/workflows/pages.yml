@@ -34,10 +34,9 @@ jobs:
           python site_patch.py _site/index.html
           python - <<'PY'
           from pathlib import Path
-          import re
+          import re, base64
           p = Path('_site/index.html')
           s = p.read_text()
-
           helpers = "const SKIP=/(^|\\/)(node_modules|vendor|dist|build|coverage|\\.next|\\.cache|\\.git|target|\\.venv|venv|__pycache__)(\\/|$)/i;\nconst EXT=/\\.(py|js|mjs|cjs|ts|tsx|jsx|json|yml|yaml|sh|bash|zsh|ps1|bat|cmd|rs|go|java|kt|sol|toml|ini|cfg|conf|env|txt|md|html|htm|xml|rb|php|pl|lua|swift|dart)$/i;\nfunction textCandidate(x){let p=x.path||'',z=+x.size||0;return x.type==='blob'&&z>0&&z<=CFG.maxFileSize&&!SKIP.test(p)&&(EXT.test(p)||/(Dockerfile|Makefile|requirements\\.txt|package-lock\\.json|yarn\\.lock|pnpm-lock\\.yaml)$/i.test(p))}\n"
           if 'const SKIP=' not in s or 'const EXT=' not in s or 'function textCandidate(' not in s:
               needle = 'function lineNo(t,i)'
@@ -47,32 +46,18 @@ jobs:
               s = re.sub(r'const SKIP=[^\n]*\n?', '', s, count=1)
               s = re.sub(r'const EXT=[^\n]*\n?', '', s, count=1)
               s = s.replace(needle, helpers + needle, 1)
-
-          # Add a transparent score explanation directly below the four score metrics.
           metrics = '<div class="metrics"><span><i data-t="security">Security</i><b id="sec">—</b>/60</span><span><i data-t="hygiene">Repo hygiene</i><b id="hyg">—</b>/20</span><span><i data-t="history">History</i><b id="hist">—</b>/12</span><span><i data-t="greens">Green squares</i><b id="green">—</b>/8</span></div>'
           explain = metrics + '<div id="scoreExplain" style="margin-top:16px;padding:16px 18px;border:1px solid #d8e2f0;border-radius:18px;background:#f8fbff;line-height:1.55"></div>'
           if 'id="scoreExplain"' not in s:
               if metrics not in s:
                   raise SystemExit('Build failed: score metrics anchor missing')
               s = s.replace(metrics, explain, 1)
-
           score_anchor = "$('#green').textContent=r.score.contributions;"
-          score_js = r'''$('#green').textContent=r.score.contributions;
-let scoreParts=[
-  {en:'Security',fa:'امنیت',got:r.score.security,max:60,whyEn:'security findings in scanned code',whyFa:'یافته‌های امنیتی در کدهای اسکن‌شده'},
-  {en:'Repo hygiene',fa:'کیفیت ریپوها',got:r.score.hygiene,max:20,whyEn:'README / License / SECURITY / CI coverage',whyFa:'پوشش README / License / SECURITY / CI'},
-  {en:'History',fa:'سابقه',got:r.score.history,max:12,whyEn:'account age, original repos, stars, forks and recent activity',whyFa:'سن اکانت، ریپوهای اصلی، استار، فورک و فعالیت اخیر'},
-  {en:'Green squares',fa:'چمن‌های سبز',got:r.score.contributions,max:8,whyEn:'active days, contribution count and streak thresholds',whyFa:'روزهای فعال، تعداد کانتریبیوشن و استریک‌ها'}
-];
-let earnedRaw=scoreParts.reduce((a,x)=>a+(+x.got||0),0), shown=+r.score.total||0, capLoss=Math.max(0,earnedRaw-shown), missing=Math.max(0,100-shown);
-let scoreRows=scoreParts.map(x=>{let lost=Math.max(0,x.max-(+x.got||0));return `<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #e8eef6"><span><b>${lang==='fa'?x.fa:x.en}</b><small style="display:block;color:#68758a">${lost?((lang==='fa'?`${lost} امتیاز نگرفته — `:`${lost} point${lost===1?'':'s'} not earned — `)+(lang==='fa'?x.whyFa:x.whyEn)):(lang==='fa'?'امتیاز کامل':'Full points')}</small></span><b style="white-space:nowrap">${x.got}/${x.max}</b></div>`}).join('');
-let capRow=capLoss?`<div style="padding-top:8px;color:#9b2c2c"><b>${lang==='fa'?`محدودیت ریسک/پوشش: ${capLoss}- امتیاز`:`Risk/coverage cap: -${capLoss} points`}</b></div>`:'';
-$('#scoreExplain').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px"><b>${lang==='fa'?'ریز امتیاز و علت کسر':'Score breakdown & why points were deducted'}</b><strong>${lang==='fa'?`${missing} امتیاز تا ۱۰۰`:`${missing} points to 100`}</strong></div>${scoreRows}${capRow}`;'''
+          score_js = base64.b64decode('JCgnI2dyZWVuJykudGV4dENvbnRlbnQ9ci5zY29yZS5jb250cmlidXRpb25zOwpsZXQgc2NvcmVQYXJ0cz1bCiAge2VuOidTZWN1cml0eScsZmE6J9in2YXZhtuM2KonLGdvdDpyLnNjb3JlLnNlY3VyaXR5LG1heDo2MCx3aHlFbjonc2VjdXJpdHkgZmluZGluZ3MgaW4gc2Nhbm5lZCBjb2RlJyx3aHlGYTon24zYp9mB2KrZh+KAjNmH2KfbjCDYp9mF2YbbjNiq24wg2K/YsSDaqdiv2YfYp9uMINin2LPaqdmG4oCM2LTYr9mHJ30sCiAge2VuOidSZXBvIGh5Z2llbmUnLGZhOifaqduM2YHbjNiqINix24zZvtmI2YfYpycsZ290OnIuc2NvcmUuaHlnaWVuZSxtYXg6MjAsd2h5RW46J1JFQURNRSAvIExpY2Vuc2UgLyBTRUNVUklUWSAvIENJIGNvdmVyYWdlJyx3aHlGYTon2b7ZiNi02LQgUkVBRE1FIC8gTGljZW5zZSAvIFNFQ1VSSVRZIC8gQ0knfSwKICB7ZW46J0hpc3RvcnknLGZhOifYs9in2KjZgtmHJyxnb3Q6ci5zY29yZS5oaXN0b3J5LG1heDoxMix3aHlFbjonYWNjb3VudCBhZ2UsIG9yaWdpbmFsIHJlcG9zLCBzdGFycywgZm9ya3MgYW5kIHJlY2VudCBhY3Rpdml0eScsd2h5RmE6J9iz2YYg2Kfaqdin2YbYqtiMINix24zZvtmI2YfYp9uMINin2LXZhNuM2Iwg2KfYs9iq2KfYsdiMINmB2YjYsdqpINmIINmB2LnYp9mE24zYqiDYp9iu24zYsSd9LAogIHtlbjonR3JlZW4gc3F1YXJlcycsZmE6J9qG2YXZhuKAjNmH2KfbjCDYs9io2LInLGdvdDpyLnNjb3JlLmNvbnRyaWJ1dGlvbnMsbWF4Ojgsd2h5RW46J2FjdGl2ZSBkYXlzLCBjb250cmlidXRpb24gY291bnQgYW5kIHN0cmVhayB0aHJlc2hvbGRzJyx3aHlGYTon2LHZiNiy2YfYp9uMINmB2LnYp9mE2Iwg2KrYudiv2KfYryDaqdin2YbYqtix24zYqNuM2YjYtNmGINmIINin2LPYqtix24zaqeKAjNmH2KcnfQpdOwpsZXQgZWFybmVkUmF3PXNjb3JlUGFydHMucmVkdWNlKChhLHgpPT5hKygreC5nb3R8fDApLDApLCBzaG93bj0rci5zY29yZS50b3RhbHx8MCwgY2FwTG9zcz1NYXRoLm1heCgwLGVhcm5lZFJhdy1zaG93biksIG1pc3Npbmc9TWF0aC5tYXgoMCwxMDAtc2hvd24pOwpsZXQgc2NvcmVSb3dzPXNjb3JlUGFydHMubWFwKHg9PntsZXQgbG9zdD1NYXRoLm1heCgwLHgubWF4LSgreC5nb3R8fDApKTtyZXR1cm4gYDxkaXYgc3R5bGU9ImRpc3BsYXk6ZmxleDtqdXN0aWZ5LWNvbnRlbnQ6c3BhY2UtYmV0d2VlbjtnYXA6MTJweDtwYWRkaW5nOjdweCAwO2JvcmRlci1ib3R0b206MXB4IHNvbGlkICNlOGVlZjYiPjxzcGFuPjxiPiR7bGFuZz09PSdmYSc/eC5mYTp4LmVufTwvYj48c21hbGwgc3R5bGU9ImRpc3BsYXk6YmxvY2s7Y29sb3I6IzY4NzU4YSI+JHtsb3N0PygobGFuZz09PSdmYSc/YCR7bG9zdH0g2KfZhdiq24zYp9iyINmG2q/YsdmB2KrZhyDigJQgYDpgJHtsb3N0fSBwb2ludCR7bG9zdD09PTE/Jyc6J3MnfSBub3QgZWFybmVkIOKAlCBgKSsobGFuZz09PSdmYSc/eC53aHlGYTp4LndoeUVuKSk6KGxhbmc9PT0nZmEnPyfYp9mF2KrbjNin2LIg2qnYp9mE2YQnOidGdWxsIHBvaW50cycpfTwvc21hbGw+PC9zcGFuPjxiIHN0eWxlPSJ3aGl0ZS1zcGFjZTpub3dyYXAiPiR7eC5nb3R9LyR7eC5tYXh9PC9iPjwvZGl2PmB9KS5qb2luKCcnKTsKbGV0IGNhcFJvdz1jYXBMb3NzP2A8ZGl2IHN0eWxlPSJwYWRkaW5nLXRvcDo4cHg7Y29sb3I6IzliMmMyYyI+PGI+JHtsYW5nPT09J2ZhJz9g2YXYrdiv2YjYr9uM2Kog2LHbjNiz2qkv2b7ZiNi02LQ6ICR7Y2FwTG9zc30tINin2YXYqtuM2KfYsmA6YFJpc2svY292ZXJhZ2UgY2FwOiAtJHtjYXBMb3NzfSBwb2ludHNgfTwvYj48L2Rpdj5gOicnOwokKCcjc2NvcmVFeHBsYWluJykuaW5uZXJIVE1MPWA8ZGl2IHN0eWxlPSJkaXNwbGF5OmZsZXg7anVzdGlmeS1jb250ZW50OnNwYWNlLWJldHdlZW47YWxpZ24taXRlbXM6Y2VudGVyO2dhcDoxMHB4O21hcmdpbi1ib3R0b206OHB4Ij48Yj4ke2xhbmc9PT0nZmEnPyfYsduM2LIg2KfZhdiq24zYp9iyINmIINi52YTYqiDaqdiz2LEnOidTY29yZSBicmVha2Rvd24gJiB3aHkgcG9pbnRzIHdlcmUgZGVkdWN0ZWQnfTwvYj48c3Ryb25nPiR7bGFuZz09PSdmYSc/YCR7bWlzc2luZ30g2KfZhdiq24zYp9iyINiq2Kcg27HbsNuwYDpgJHttaXNzaW5nfSBwb2ludHMgdG8gMTAwYH08L3N0cm9uZz48L2Rpdj4ke3Njb3JlUm93c30ke2NhcFJvd31gOw==').decode()
           if 'scoreParts=[' not in s:
               if score_anchor not in s:
                   raise SystemExit('Build failed: render score anchor missing')
               s = s.replace(score_anchor, score_js, 1)
-
           p.write_text(s)
           PY
           touch _site/.nojekyll
@@ -86,6 +71,16 @@ $('#scoreExplain').innerHTML=`<div style="display:flex;justify-content:space-bet
           grep -q 'WALLET_CLIPBOARD_HIJACK' _site/index.html
           grep -q 'SECRET_TO_EXFIL_ENDPOINT' _site/index.html
           grep -q 'SEVERE SECURITY RISK' _site/index.html
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('_site/index.html').read_text()
+          scripts=re.findall(r'<script>(.*?)</script>',s,re.S)
+          if not scripts: raise SystemExit('Build failed: inline script missing')
+          Path('_site/runtime-check.js').write_text('\n'.join(scripts))
+          PY
+          node --check _site/runtime-check.js
+          rm _site/runtime-check.js
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
