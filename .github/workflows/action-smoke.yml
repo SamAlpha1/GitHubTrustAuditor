@@ -1,0 +1,35 @@
+name: Reusable Action Smoke Test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - action.yml
+      - GITHUB_ACTION.md
+      - examples/github-trust-audit.yml
+      - .github/workflows/action-smoke.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Run local GitHub Trust Auditor action
+        uses: ./
+        with:
+          username: SamAlpha1
+          github-token: ${{ github.token }}
+          max-files: '30'
+          max-file-size: '500000'
+
+      - name: Verify reports exist
+        if: always()
+        shell: bash
+        run: |
+          test -s github-trust-audit.json
+          test -s github-trust-audit.html
