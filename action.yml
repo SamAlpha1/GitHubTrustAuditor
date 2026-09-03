@@ -1,0 +1,81 @@
+name: GitHub Trust Auditor
+description: Defensive static security and trust audit for a GitHub account without executing target code.
+author: SamAlpha1
+branding:
+  icon: shield
+  color: blue
+
+inputs:
+  username:
+    description: GitHub username to audit
+    required: true
+  github-token:
+    description: Optional read-only GitHub token for higher API limits
+    required: false
+    default: ''
+  max-files:
+    description: Maximum candidate text files scanned per repository
+    required: false
+    default: '350'
+  max-file-size:
+    description: Maximum text blob size in bytes
+    required: false
+    default: '1000000'
+
+outputs:
+  report-json:
+    description: Path to the generated JSON report
+    value: ${{ steps.audit.outputs.report-json }}
+  report-html:
+    description: Path to the generated HTML report
+    value: ${{ steps.audit.outputs.report-html }}
+  exit-code:
+    description: Auditor exit code (0 clean/complete, 1 partial/error, 2 critical)
+    value: ${{ steps.audit.outputs.exit-code }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.11'
+
+    - name: Install GitHub Trust Auditor
+      shell: bash
+      run: |
+        python -m pip install --disable-pip-version-check -r "${{ github.action_path }}/requirements.txt"
+
+    - name: Audit GitHub account
+      id: audit
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      run: |
+        set +e
+        python "${{ github.action_path }}/auditor.py" "${{ inputs.username }}" \
+          --max-files "${{ inputs.max-files }}" \
+          --max-file-size "${{ inputs.max-file-size }}" \
+          --json "${{ github.workspace }}/github-trust-audit.json" \
+          --html "${{ github.workspace }}/github-trust-audit.html" \
+          --quiet
+        code=$?
+        set -e
+
+        echo "exit-code=$code" >> "$GITHUB_OUTPUT"
+        echo "report-json=${{ github.workspace }}/github-trust-audit.json" >> "$GITHUB_OUTPUT"
+        echo "report-html=${{ github.workspace }}/github-trust-audit.html" >> "$GITHUB_OUTPUT"
+
+        if [ "$code" -eq 2 ]; then
+          echo "::error::GitHub Trust Auditor detected critical security findings."
+          exit 2
+        fi
+
+        if [ "$code" -eq 1 ]; then
+          if [ -s "${{ github.workspace }}/github-trust-audit.json" ]; then
+            echo "::warning::Audit completed with partial coverage. Review the generated report."
+          else
+            echo "::error::Audit could not produce a report."
+            exit 1
+          fi
+        fi
