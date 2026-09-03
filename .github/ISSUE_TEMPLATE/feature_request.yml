@@ -1,0 +1,40 @@
+name: Feature request
+description: Suggest a useful scanner, UX, reporting, or integration improvement
+title: "[Feature]: "
+labels: []
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What user problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior or workflow you want.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Security detection
+        - False-positive reduction
+        - Web UI / mobile
+        - Reporting / sharing
+        - CLI
+        - GitHub integration
+        - Other
+    validations:
+      required: true
+  - type: checkboxes
+    id: defensive
+    attributes:
+      label: Scope
+      options:
+        - label: This request is compatible with defensive, static analysis and does not require executing target repository code.
+          required: true
