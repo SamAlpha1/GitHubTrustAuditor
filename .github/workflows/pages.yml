@@ -10,6 +10,7 @@ on:
       - post_build_patch.py
       - ux_language_fix.py
       - ux_support_prefill.py
+      - overall_score_style.py
       - .github/workflows/pages.yml
   workflow_dispatch:
 
@@ -37,6 +38,7 @@ jobs:
           python post_build_patch.py _site/index.html
           python ux_language_fix.py _site/index.html
           python ux_support_prefill.py _site/index.html
+          python overall_score_style.py _site/index.html
           test -s _site/index.html
           grep -q "INCOMPLETE SCAN" _site/index.html
           grep -q "scan_status:'unavailable'" _site/index.html
@@ -54,6 +56,10 @@ jobs:
           grep -q 'value="SamAlpha1"' _site/index.html
           grep -q 'href="https://github.com/SamAlpha1/GitHubTrustAuditor"' _site/index.html
           grep -q 'href="https://github.com/SamAlpha1/GitHubTrustAuditor/fork"' _site/index.html
+          grep -q 'id="overall-score-style"' _site/index.html
+          grep -q 'Overall Score' _site/index.html
+          grep -q 'امتیاز کلی' _site/index.html
+          grep -q 'overallScoreVisual(r.score.total)' _site/index.html
           ! grep -q '<input id="target" disabled' _site/index.html
           ! grep -q 'id="go" class="btn blue" disabled' _site/index.html
       - uses: actions/configure-pages@v6
