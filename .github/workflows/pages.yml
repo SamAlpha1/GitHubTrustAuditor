@@ -44,7 +44,12 @@ jobs:
           grep -q 'id="langEn"' _site/index.html
           grep -q 'id="langFa"' _site/index.html
           grep -q "document.documentElement.dir='ltr'" _site/index.html
+          grep -q 'id="go" class="btn blue" data-t="scan"' _site/index.html
+          grep -q 'Star SamAlpha1/GitHubTrustAuditor' _site/index.html
+          grep -q 'Fork SamAlpha1/GitHubTrustAuditor' _site/index.html
+          grep -q 'scanning is always available below' _site/index.html
           ! grep -q '<input id="target" disabled' _site/index.html
+          ! grep -q 'id="go" class="btn blue" disabled' _site/index.html
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
