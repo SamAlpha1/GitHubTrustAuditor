@@ -57,8 +57,8 @@ jobs:
           grep -q 'href="https://github.com/SamAlpha1/GitHubTrustAuditor"' _site/index.html
           grep -q 'href="https://github.com/SamAlpha1/GitHubTrustAuditor/fork"' _site/index.html
           grep -q 'id="overall-score-style"' _site/index.html
-          grep -q 'Overall Score' _site/index.html
-          grep -q 'امتیاز کلی' _site/index.html
+          grep -q 'This Account’s Overall Score' _site/index.html
+          grep -q 'جمع امتیاز این اکانت' _site/index.html
           grep -q 'overallScoreVisual(r.score.total)' _site/index.html
           ! grep -q '<input id="target" disabled' _site/index.html
           ! grep -q 'id="go" class="btn blue" disabled' _site/index.html
