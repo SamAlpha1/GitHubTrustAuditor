@@ -13,6 +13,7 @@ on:
       - overall_score_style.py
       - cache_rate_limit.py
       - engagement_stats.py
+      - growth_boost.py
       - .github/workflows/pages.yml
   workflow_dispatch:
 
@@ -43,7 +44,10 @@ jobs:
           python overall_score_style.py _site/index.html
           python cache_rate_limit.py _site/index.html
           python engagement_stats.py _site/index.html
+          python growth_boost.py _site/index.html
           test -s _site/index.html
+          test -s _site/robots.txt
+          test -s _site/sitemap.xml
           grep -q "INCOMPLETE SCAN" _site/index.html
           grep -q "scan_status:'unavailable'" _site/index.html
           grep -q "repositories unavailable for inspection" _site/index.html
@@ -73,6 +77,13 @@ jobs:
           grep -q 'id="starClickCount"' _site/index.html
           grep -q 'id="forkClickCount"' _site/index.html
           grep -q 'counterapi.com/api' _site/index.html
+          grep -q 'id="growthShareBar"' _site/index.html
+          grep -q 'id="growthShareBtn"' _site/index.html
+          grep -q 'id="growthXBtn"' _site/index.html
+          grep -q 'id="growthBadgeBtn"' _site/index.html
+          grep -q 'function gtaPrefillFromQuery()' _site/index.html
+          grep -q 'img.shields.io' _site/index.html
+          grep -q 'og:title' _site/index.html
           ! grep -q '<input id="target" disabled' _site/index.html
           ! grep -q 'id="go" class="btn blue" disabled' _site/index.html
       - uses: actions/configure-pages@v6
