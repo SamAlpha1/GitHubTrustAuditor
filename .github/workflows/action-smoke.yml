@@ -7,6 +7,9 @@ on:
       - action.yml
       - GITHUB_ACTION.md
       - examples/github-trust-audit.yml
+      - trust_auditor/scoring.py
+      - trust_auditor/scanner.py
+      - trust_auditor/cli.py
       - .github/workflows/action-smoke.yml
   workflow_dispatch:
 
