@@ -24,18 +24,37 @@ def main() -> None:
     s = s.replace(old_header, new_header, 1)
 
     old_lang = "function setLang(v){lang=v;localStorage.setItem('gta_lang',v);document.documentElement.lang=v;document.documentElement.dir=v==='fa'?'rtl':'ltr';$$('[data-t]').forEach(e=>{const k=e.dataset.t;if(T[v][k])e.textContent=T[v][k]});$('#lang').textContent=v==='fa'?'EN':'FA'}\nsetLang(lang);$('#lang').onclick=()=>setLang(lang==='en'?'fa':'en');"
-    new_lang = "function setLang(v){lang=v==='fa'?'fa':'en';localStorage.setItem('gta_lang',lang);document.documentElement.lang=lang;document.documentElement.dir='ltr';document.body.classList.toggle('fa-mode',lang==='fa');$$('[data-t]').forEach(e=>{const k=e.dataset.t;if(T[lang][k])e.textContent=T[lang][k]});$('#langEn').classList.toggle('active',lang==='en');$('#langFa').classList.toggle('active',lang==='fa');$('#visitor').placeholder=lang==='fa'?'یوزرنیم GitHub خودت برای تأیید':'Your GitHub username for verification';$('#target').placeholder=lang==='fa'?'یوزرنیم یا لینک GitHub برای اسکن':'GitHub username or profile URL to scan'}\nsetLang(lang);$('#langEn').onclick=()=>setLang('en');$('#langFa').onclick=()=>setLang('fa');"
+    new_lang = "function setLang(v){lang=v==='fa'?'fa':'en';localStorage.setItem('gta_lang',lang);document.documentElement.lang=lang;document.documentElement.dir='ltr';document.body.classList.toggle('fa-mode',lang==='fa');$$('[data-t]').forEach(e=>{const k=e.dataset.t;if(T[lang][k])e.textContent=T[lang][k]});$('#langEn').classList.toggle('active',lang==='en');$('#langFa').classList.toggle('active',lang==='fa');$('#visitor').placeholder=lang==='fa'?'یوزرنیم GitHub خودت برای تأیید حمایت':'Your GitHub username for optional support verification';$('#target').placeholder=lang==='fa'?'یوزرنیم یا لینک GitHub برای اسکن':'GitHub username or profile URL to scan'}\nsetLang(lang);$('#langEn').onclick=()=>setLang('en');$('#langFa').onclick=()=>setLang('fa');"
     if old_lang not in s:
         fail("setLang anchor missing")
     s = s.replace(old_lang, new_lang, 1)
 
     old_target = '<form id="form" class="row"><input id="target" disabled placeholder="octocat or https://github.com/octocat" required><button id="go" class="btn blue" disabled data-t="scan">SCAN GITHUB</button></form>'
-    new_target = '<form id="form" class="row"><input id="target" autocomplete="off" placeholder="GitHub username or profile URL to scan" required><button id="go" class="btn blue" disabled data-t="scan">SCAN GITHUB</button></form>'
+    new_target = '<form id="form" class="row"><input id="target" autocomplete="off" placeholder="GitHub username or profile URL to scan" required><button id="go" class="btn blue" data-t="scan">SCAN GITHUB</button></form>'
     if old_target not in s:
         fail("target input anchor missing")
     s = s.replace(old_target, new_target, 1)
 
     s = s.replace('<section id="scanner" class="card locked">', '<section id="scanner" class="card">', 1)
+
+    # Support is always pinned to SamAlpha1/GitHubTrustAuditor and is not an access gate.
+    replacements = {
+        "Star and Fork SamAlpha1/GitHubTrustAuditor, then enter your GitHub username to verify and unlock the scanner.": "Support SamAlpha1/GitHubTrustAuditor with a Star and Fork. Verification is optional; scanning is always available below.",
+        "ریپوی SamAlpha1/GitHubTrustAuditor را Star و Fork کن، بعد یوزرنیم GitHub خودت را وارد کن تا اسکنر باز شود.": "برای حمایت، ریپوی SamAlpha1/GitHubTrustAuditor را Star و Fork کن. تأیید اختیاری است و اسکن همیشه در دسترس است.",
+        "Star GitHubTrustAuditor": "Star SamAlpha1/GitHubTrustAuditor",
+        "Fork GitHubTrustAuditor": "Fork SamAlpha1/GitHubTrustAuditor",
+        "استار GitHubTrustAuditor": "استار SamAlpha1/GitHubTrustAuditor",
+        "فورک GitHubTrustAuditor": "فورک SamAlpha1/GitHubTrustAuditor",
+        "scanner unlocked for testing.": "support check completed.",
+        "اسکنر برای تست باز شد.": "بررسی حمایت انجام شد.",
+        "scanner unlocked.": "support check completed.",
+        "اسکنر باز شد.": "بررسی حمایت انجام شد.",
+    }
+    for old, new in replacements.items():
+        s = s.replace(old, new)
+
+    # Defensive final override: initial scan button must never be gated by support verification.
+    s = s.replace('id="go" class="btn blue" disabled', 'id="go" class="btn blue"')
 
     css = r'''<style id="language-layout-fix">
 .langSwitch{display:flex;gap:6px;padding:4px;border:1px solid var(--line);background:#fff;border-radius:13px}
@@ -50,6 +69,7 @@ def main() -> None:
 .fa-mode th,.fa-mode td{text-align:left}
 .fa-mode #results th:first-child,.fa-mode #results td:first-child{text-align:left}
 .fa-mode #results th:nth-child(2),.fa-mode #results td:nth-child(2){text-align:right!important}
+#starMineBtn,#forkMineBtn{white-space:normal;text-align:center;line-height:1.25}
 @media(max-width:520px){.langChoice{padding:6px 8px;font-size:12px}.langSwitch{gap:3px}.top{gap:8px}.brand{font-size:17px}}
 </style>'''
     if '</head>' not in s:
@@ -64,9 +84,11 @@ def main() -> None:
         "document.documentElement.dir='ltr'",
         'id="language-layout-fix"',
         'id="target" autocomplete="off"',
-        'id="go" class="btn blue" disabled',
-        "یوزرنیم GitHub خودت برای تأیید",
-        "GitHub username for verification",
+        'id="go" class="btn blue" data-t="scan"',
+        "SamAlpha1/GitHubTrustAuditor",
+        "scanning is always available below",
+        "اسکن همیشه در دسترس است",
+        "GitHub username for optional support verification",
     ]
     for marker in required:
         if marker not in s:
@@ -74,6 +96,8 @@ def main() -> None:
 
     if '<input id="target" disabled' in s:
         fail("target input is still disabled")
+    if 'id="go" class="btn blue" disabled' in s:
+        fail("scan button is still support-gated")
     if "$('#lang').onclick" in s or 'id="lang" class="ghost"' in s:
         fail("legacy ambiguous language toggle still present")
     if 'syncEvidenceToggle?.()' in s:
