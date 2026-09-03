@@ -6,6 +6,8 @@
 [![MIT License](https://img.shields.io/badge/License-MIT-16a34a?style=for-the-badge)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/SamAlpha1/GitHubTrustAuditor?style=for-the-badge&logo=github)](https://github.com/SamAlpha1/GitHubTrustAuditor/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/SamAlpha1/GitHubTrustAuditor?style=for-the-badge&logo=github)](https://github.com/SamAlpha1/GitHubTrustAuditor/forks)
+[![Latest release](https://img.shields.io/github/v/release/SamAlpha1/GitHubTrustAuditor?style=for-the-badge&logo=github)](https://github.com/SamAlpha1/GitHubTrustAuditor/releases/latest)
+[![Discussions](https://img.shields.io/badge/Community-Discussions-8250df?style=for-the-badge&logo=github)](https://github.com/SamAlpha1/GitHubTrustAuditor/discussions)
 
 **Maintained by [SamAlpha1](https://github.com/SamAlpha1)** · **Follow [@samalpha_ on X](https://x.com/samalpha_)**
 
@@ -147,6 +149,12 @@ Generic example:
 ```md
 [![GitHub Trust Auditor](https://img.shields.io/badge/GitHub_Trust_Auditor-Scan_now-0b5cff?logo=github)](https://samalpha1.github.io/GitHubTrustAuditor/)
 ```
+
+## Community
+
+Join the public [GitHub Discussions](https://github.com/SamAlpha1/GitHubTrustAuditor/discussions) to share audit results, ask questions, report false positives, suggest detection rules, and discuss roadmap ideas.
+
+Latest release: [GitHub Trust Auditor v1.0.0](https://github.com/SamAlpha1/GitHubTrustAuditor/releases/tag/v1.0.0).
 
 ## Contributing
 
