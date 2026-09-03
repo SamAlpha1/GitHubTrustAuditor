@@ -1,4 +1,4 @@
-name: Publish v1.1.1
+name: Publish stable v1.1.1 tags
 
 on:
   push:
@@ -11,63 +11,24 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  tag:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Publish tested v1.1.1 and update stable v1 tag
+      - name: Point v1.1.1 and v1 to tested commit
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
           TARGET_SHA: 98a05511e0cf74d628ffe48b447a77f21c73f059
         run: |
           set -euo pipefail
           git fetch origin "$TARGET_SHA"
           git cat-file -e "$TARGET_SHA^{commit}"
-
-          cat > /tmp/release-notes.md <<'EOF'
-          # GitHub Trust Auditor v1.1.1
-
-          Tested patch release maintained by SamAlpha1.
-
-          ## Changes
-
-          - Keeps the reusable GitHub Action introduced in v1.1.0.
-          - Fixes repository-hygiene scoring for inspectable repositories.
-          - Aligns CLI scoring tests with the context-aware web model.
-          - Generic sensitive-data/network proximity is no longer treated as confirmed exfiltration by itself.
-          - Confirmed Critical exfiltration requires stronger correlated evidence, such as an explicit webhook/exfiltration endpoint in the same file.
-          - CI test suite passed on the release target.
-          - Reusable Action smoke test passed and generated JSON + HTML reports successfully.
-
-          ## Use in GitHub Actions
-
-          ```yaml
-          - uses: SamAlpha1/GitHubTrustAuditor@v1
-            with:
-              username: octocat
-              github-token: ${{ github.token }}
-          ```
-
-          Live app: https://samalpha1.github.io/GitHubTrustAuditor/
-
-          Launch post: https://x.com/samalpha_/status/2095568206484164967
-
-          GitHub: https://github.com/SamAlpha1  
-          X: https://x.com/samalpha_
-          EOF
-
-          if ! gh release view v1.1.1 >/dev/null 2>&1; then
-            gh release create v1.1.1 \
-              --target "$TARGET_SHA" \
-              --title "GitHub Trust Auditor v1.1.1" \
-              --notes-file /tmp/release-notes.md
-          fi
-
           git config user.name "SamAlpha1"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -f v1.1.1 "$TARGET_SHA"
           git tag -f v1 "$TARGET_SHA"
+          git push origin refs/tags/v1.1.1 --force
           git push origin refs/tags/v1 --force
