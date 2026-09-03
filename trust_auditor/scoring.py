@@ -29,6 +29,19 @@ SECURITY_PENALTY = {
     "INFO": 0,
 }
 
+# These signals are useful context, but are not malicious by themselves.
+# They only become security-negative when stronger behavioral correlation exists.
+INFORMATIONAL_RULE_IDS = {
+    "PRIVATE_KEY_PROMPT",
+    "PASSWORD_PROMPT",
+    "WEBHOOK",
+    "OUTBOUND_POST",
+    "SIGN_TX",
+    "ENV_SECRET_READ",
+    "UNDOCUMENTED_TRANSACTION_CAPABILITY",
+    "SENSITIVE_DATA_WITH_NETWORK",
+}
+
 
 def _age_years(created_at: str | None) -> float:
     if not created_at:
@@ -51,9 +64,11 @@ def score_account(
     for result in repo_results:
         findings.extend(result.get("findings", []))
 
+    scored_findings = [f for f in findings if f.rule_id not in INFORMATIONAL_RULE_IDS]
+
     security = 60
     per_rule_hits: dict[str, int] = {}
-    for finding in findings:
+    for finding in scored_findings:
         hits = per_rule_hits.get(finding.rule_id, 0)
         # Repeated hits matter, but cap each rule to avoid one noisy pattern consuming the full score.
         multiplier = 1.0 if hits == 0 else 0.45 if hits < 3 else 0.2
@@ -61,12 +76,14 @@ def score_account(
         per_rule_hits[finding.rule_id] = hits + 1
     security = max(0, min(60, security))
 
+    # Hygiene is calculated only from repositories that were actually inspectable.
+    rated_results = [r for r in repo_results if r.get("files_seen", 0) or r.get("complete")]
     hygiene = 0
-    if repositories:
-        has_readme = sum(1 for r in repo_results if r.get("has_readme")) / len(repo_results)
-        has_license = sum(1 for r in repo_results if r.get("has_license")) / len(repo_results)
-        has_security = sum(1 for r in repo_results if r.get("has_security")) / len(repo_results)
-        has_ci = sum(1 for r in repo_results if r.get("has_ci")) / len(repo_results)
+    if rated_results:
+        has_readme = sum(1 for r in rated_results if r.get("has_readme")) / len(rated_results)
+        has_license = sum(1 for r in rated_results if r.get("has_license")) / len(rated_results)
+        has_security = sum(1 for r in rated_results if r.get("has_security")) / len(rated_results)
+        has_ci = sum(1 for r in rated_results if r.get("has_ci")) / len(rated_results)
         hygiene += round(has_readme * 7)
         hygiene += round(has_license * 5)
         hygiene += round(has_security * 3)
@@ -106,15 +123,39 @@ def score_account(
     contributions = min(8, contributions)
 
     total = security + hygiene + history + contributions
-    critical = any(f.severity == "CRITICAL" for f in findings)
-    high = any(f.severity == "HIGH" for f in findings)
-    exfil = any(f.rule_id in {"SECRET_TO_NETWORK", "DANGEROUS_INSTALL_HOOK"} and f.severity == "CRITICAL" for f in findings)
+
+    # Generic network capability next to sensitive handling is not enough for a scam verdict.
+    # Treat SECRET_TO_NETWORK as Critical only when the same file also contains an explicit
+    # webhook/bot exfiltration endpoint. Dangerous install hooks remain independently Critical.
+    webhook_locations = {
+        (f.repository, f.path)
+        for f in findings
+        if f.rule_id == "WEBHOOK"
+    }
+    confirmed_exfil = any(
+        f.rule_id == "SECRET_TO_NETWORK"
+        and f.severity == "CRITICAL"
+        and (f.repository, f.path) in webhook_locations
+        for f in findings
+    )
+    dangerous_install = any(
+        f.rule_id == "DANGEROUS_INSTALL_HOOK" and f.severity == "CRITICAL"
+        for f in scored_findings
+    )
+    exfil = confirmed_exfil or dangerous_install
+
+    strong_critical = any(
+        f.severity == "CRITICAL"
+        and f.rule_id not in {"SECRET_TO_NETWORK"}
+        for f in scored_findings
+    )
+    strong_high = any(f.severity == "HIGH" for f in scored_findings)
 
     if exfil:
         total = min(total, 15)
-    elif critical:
-        total = min(total, 39)
-    elif high:
+    elif strong_critical:
+        total = min(total, 49)
+    elif strong_high:
         total = min(total, 69)
     if coverage_partial:
         total = min(total, 84)
@@ -130,10 +171,10 @@ def score_account(
     else:
         verdict = "TRUSTED"
 
-    if verdict == "TRUSTED" and not high and not critical and not coverage_partial:
+    if verdict == "TRUSTED" and not strong_high and not strong_critical and not coverage_partial:
         recommendation = "No significant malicious indicators detected in scanned coverage. If the project is useful to you, consider starring or forking it."
-    elif verdict == "LOW RISK" and not critical:
-        recommendation = "No critical indicators detected, but review important code paths and permissions before use."
+    elif verdict == "LOW RISK":
+        recommendation = "No confirmed critical exfiltration indicator detected, but review important code paths and permissions before use."
     elif verdict == "CAUTION":
         recommendation = "Review flagged files carefully before running code, connecting a wallet, or granting permissions."
     else:
