@@ -1,0 +1,58 @@
+name: Sanitize release notes
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-release-notes.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  sanitize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rewrite v1.1.0 release notes safely
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > /tmp/release-notes.md <<'EOF'
+          # GitHub Trust Auditor v1.1.0
+
+          Adoption and automation release maintained by SamAlpha1.
+
+          ## Highlights
+
+          - Added reusable GitHub Action support through `action.yml`.
+          - Added a copy-ready workflow example for auditing a GitHub account from GitHub Actions.
+          - Produces JSON and standalone HTML reports in CI.
+          - Added stable `v1` tag for workflow usage: `SamAlpha1/GitHubTrustAuditor@v1`.
+          - Aligned CLI account scoring with the context-aware web model so informational wallet/network capability does not become a malicious score by itself.
+          - Critical account verdicts require stronger correlated evidence such as explicit exfiltration behavior or dangerous executable install hooks.
+          - Reusable Action smoke-tested against SamAlpha1 and verified to generate reports successfully.
+          - README includes web, CLI, Action usage, maintainer links, and the public launch post.
+
+          ## Live app
+
+          https://samalpha1.github.io/GitHubTrustAuditor/
+
+          ## GitHub Action
+
+          ```yaml
+          - uses: SamAlpha1/GitHubTrustAuditor@v1
+            with:
+              username: octocat
+          ```
+
+          ## Launch post
+
+          https://x.com/samalpha_/status/2095568206484164967
+
+          ## Maintainer
+
+          GitHub: https://github.com/SamAlpha1
+
+          X: https://x.com/samalpha_
+          EOF
+
+          gh release edit v1.1.0 --repo "$GITHUB_REPOSITORY" --notes-file /tmp/release-notes.md
