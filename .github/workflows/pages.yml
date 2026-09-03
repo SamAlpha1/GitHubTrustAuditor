@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - site.html.gz.b64
+      - 'site.part*'
       - .github/workflows/pages.yml
   workflow_dispatch:
 
@@ -28,7 +28,7 @@ jobs:
       - name: Build static site
         run: |
           mkdir -p _site
-          base64 --decode site.html.gz.b64 | gzip --decompress > _site/index.html
+          cat site.part01 site.part02 site.part03 site.part04 site.part05 | base64 --decode | gzip --decompress > _site/index.html
           touch _site/.nojekyll
           test -s _site/index.html
       - uses: actions/configure-pages@v6
