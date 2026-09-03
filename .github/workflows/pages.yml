@@ -9,6 +9,7 @@ on:
       - build_site.py
       - post_build_patch.py
       - ux_language_fix.py
+      - ux_support_prefill.py
       - .github/workflows/pages.yml
   workflow_dispatch:
 
@@ -35,6 +36,7 @@ jobs:
           python build_site.py
           python post_build_patch.py _site/index.html
           python ux_language_fix.py _site/index.html
+          python ux_support_prefill.py _site/index.html
           test -s _site/index.html
           grep -q "INCOMPLETE SCAN" _site/index.html
           grep -q "scan_status:'unavailable'" _site/index.html
@@ -48,6 +50,10 @@ jobs:
           grep -q 'Star SamAlpha1/GitHubTrustAuditor' _site/index.html
           grep -q 'Fork SamAlpha1/GitHubTrustAuditor' _site/index.html
           grep -q 'scanning is always available below' _site/index.html
+          grep -q 'id="visitor"' _site/index.html
+          grep -q 'value="SamAlpha1"' _site/index.html
+          grep -q 'href="https://github.com/SamAlpha1/GitHubTrustAuditor"' _site/index.html
+          grep -q 'href="https://github.com/SamAlpha1/GitHubTrustAuditor/fork"' _site/index.html
           ! grep -q '<input id="target" disabled' _site/index.html
           ! grep -q 'id="go" class="btn blue" disabled' _site/index.html
       - uses: actions/configure-pages@v6
