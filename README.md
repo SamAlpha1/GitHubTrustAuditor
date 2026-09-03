@@ -2,6 +2,13 @@
 
 A defensive, read-only GitHub account and repository security auditor with a **bilingual English/Persian web interface** and a CLI.
 
+**Maintained by [SamAlpha1](https://github.com/SamAlpha1)**  
+**X / Twitter: [@samalpha_](https://x.com/samalpha_)**
+
+If this repository is useful to you, follow **SamAlpha1** on GitHub and **@samalpha_** on X for updates and related tools.
+
+اگر این ریپو برات کاربردی بود، **SamAlpha1** رو در GitHub و **@samalpha_** رو در X دنبال کن.
+
 Paste a GitHub username, profile URL, or repository URL. The auditor inventories the account's visible repositories, statically scans source code for credential-theft and data-exfiltration indicators, reviews wallet and install behavior, evaluates repository quality/history, includes GitHub contribution activity as a small reputation signal, and returns a 0–100 score with a clear risk verdict.
 
 > A clean report is not proof that a person is trustworthy, and a red report is not proof that a person is a scammer. The verdict describes **observable technical risk in the scanned coverage**. Private third-party repositories cannot be inspected without legitimate access.
@@ -78,47 +85,19 @@ Serious security findings always override social/reputation signals. A large num
 
 ## GitHub “green squares”
 
-When GitHub's public contribution calendar is available, the web report shows:
+When GitHub's public contribution calendar is available, the web report shows contribution total, active days, longest streak, current streak, contribution calendar cells, and unusually uniform activity as an **informational** signal only.
 
-- contribution total
-- active days
-- longest streak
-- current streak
-- contribution calendar cells
-- unusually uniform activity as an **informational** signal only
-
-Contribution activity is capped at **8%** of the account score.
-
-A sparse public graph is not automatically suspicious: legitimate developers may keep work private, contribute in organizations, or hide private contribution activity.
+Contribution activity is capped at **8%** of the account score. A sparse public graph is not automatically suspicious: legitimate developers may keep work private, contribute in organizations, or hide private contribution activity.
 
 ## Risk table
 
-The web report groups findings into easy-to-read rows:
+The web report groups findings into easy-to-read rows covering credential collection, exfiltration, clipboard/wallet replacement, wallet approvals, transactions, install scripts, obfuscation, secret exposure, repository hygiene, and contribution activity.
 
-1. Seed / private key / password theft
-2. Data exfiltration & webhooks
-3. Clipboard & wallet-address replacement
-4. Wallet approvals & transactions
-5. Install scripts & obfuscation
-6. Dependencies & CI security
-7. Documentation & repository hygiene
-8. Contribution-graph signal
-
-Below that, every scanned repository receives its own score and risk badge, followed by the highest-value file/line evidence.
-
-Potential secret values are redacted from reports.
+Every scanned repository receives its own score and risk badge, followed by the highest-value file/line evidence. Potential secret values are redacted from reports.
 
 ## Safe Star / Fork recommendation
 
-A **Star/Fork** recommendation is shown only when:
-
-- account verdict is `TRUSTED`
-- scan coverage is complete
-- there are no High/Critical findings
-- the recommended repository itself scores at least 85
-- it is public, complete, and not archived
-
-The wording is deliberately conditional:
+A **Star/Fork** recommendation is shown only when the account verdict is `TRUSTED`, scan coverage is complete, there are no High/Critical findings, the recommended repository itself scores at least 85, and it is public, complete, and not archived.
 
 > If the project is useful to you, consider starring or forking it.
 
@@ -146,13 +125,9 @@ export GITHUB_TOKEN="AUTHORIZED_READ_ONLY_TOKEN"
 python web_server.py --allow-private
 ```
 
-The default web UI does not request a visitor's GitHub token, seed phrase, wallet key, or password.
-
-Private repositories belonging to an unrelated third party cannot be discovered or audited without authorized access.
+The default web UI does not request a visitor's GitHub token, seed phrase, wallet key, or password. Private repositories belonging to an unrelated third party cannot be discovered or audited without authorized access.
 
 ## CLI
-
-The original CLI remains available.
 
 Public account:
 
@@ -174,8 +149,6 @@ python auditor.py YOUR_GITHUB_USERNAME --include-private
 ```
 
 ## Score model
-
-Maximum score:
 
 ```text
 Security                 60
@@ -200,18 +173,7 @@ Critical exfiltration or dangerous install behavior can cap the final score rega
 
 ## Static, defensive design
 
-The target repository code is **never executed** by the auditor.
-
-It does not:
-
-- install target dependencies
-- run target shell scripts
-- open a target wallet
-- sign transactions
-- connect to target RPC services
-- ask for a seed phrase
-- ask for a private wallet key
-- submit credentials to a target project
+The target repository code is **never executed** by the auditor. It does not install target dependencies, run target shell scripts, open a target wallet, sign transactions, connect to target RPC services, ask for a seed phrase, ask for a private wallet key, or submit credentials to a target project.
 
 It reads accessible GitHub metadata and text blobs and performs deterministic static analysis plus cross-signal correlation.
 
@@ -243,4 +205,5 @@ MIT.
 
 ## Maintainer
 
-**SamAlpha1**
+**[SamAlpha1](https://github.com/SamAlpha1)**  
+**X / Twitter: [@samalpha_](https://x.com/samalpha_)**
