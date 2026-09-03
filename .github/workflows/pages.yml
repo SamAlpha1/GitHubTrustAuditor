@@ -58,6 +58,36 @@ jobs:
               if score_anchor not in s:
                   raise SystemExit('Build failed: render score anchor missing')
               s = s.replace(score_anchor, score_js, 1)
+
+          mobile_css = '''<style id="mobile-layout-fix">
+          #results>.card{display:block!important;min-width:0}
+          #results .banner,#results .profile,#results .metrics,#results .activity,#results .riskRows,#scoreExplain{min-width:0;max-width:100%}
+          #scoreExplain{width:100%;overflow-wrap:anywhere;word-break:normal}
+          #results .banner{align-items:flex-start}
+          @media(max-width:720px){
+            .wrap{padding:14px}
+            #results>.card{padding:16px;margin:12px 0}
+            #results .banner{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:18px;width:100%}
+            #results .banner h2{font-size:25px;line-height:1.08;overflow-wrap:anywhere}
+            #results .banner p{line-height:1.5}
+            #results .orb{width:74px;height:74px;min-width:74px;border-width:6px;font-size:23px}
+            #results .profile{display:grid;grid-template-columns:62px minmax(0,1fr);gap:12px;width:100%}
+            #results .ava{width:62px;height:62px}
+            #results .profile h3{font-size:21px;overflow-wrap:anywhere}
+            #results .stats{gap:10px 14px}
+            #results .metrics,#results .activity{grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+            #results .metrics span,#results .activity span{min-width:0}
+            #results .risk{grid-template-columns:minmax(0,1fr) auto;width:100%}
+            #scoreExplain{padding:14px!important;font-size:13px}
+            #scoreExplain>div:first-child{align-items:flex-start!important;flex-direction:column;gap:4px!important}
+            #results .head{width:100%}
+            #results .table{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+          }
+          </style>'''
+          if 'id="mobile-layout-fix"' not in s:
+              if '</head>' not in s:
+                  raise SystemExit('Build failed: head anchor missing')
+              s = s.replace('</head>', mobile_css + '\n</head>', 1)
           p.write_text(s)
           PY
           touch _site/.nojekyll
@@ -68,6 +98,8 @@ jobs:
           grep -q 'cand=tree.filter(textCandidate)' _site/index.html
           grep -q 'id="scoreExplain"' _site/index.html
           grep -q 'Score breakdown & why points were deducted' _site/index.html
+          grep -q 'id="mobile-layout-fix"' _site/index.html
+          grep -q '#results>.card{display:block!important' _site/index.html
           grep -q 'WALLET_CLIPBOARD_HIJACK' _site/index.html
           grep -q 'SECRET_TO_EXFIL_ENDPOINT' _site/index.html
           grep -q 'SEVERE SECURITY RISK' _site/index.html
