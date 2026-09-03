@@ -1,0 +1,32 @@
+name: GitHub Trust Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      username:
+        description: GitHub username to audit
+        required: true
+        default: SamAlpha1
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run GitHub Trust Auditor
+        uses: SamAlpha1/GitHubTrustAuditor@v1
+        with:
+          username: ${{ inputs.username }}
+          github-token: ${{ github.token }}
+
+      - name: Upload audit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: github-trust-audit-${{ inputs.username }}
+          path: |
+            github-trust-audit.json
+            github-trust-audit.html
+          if-no-files-found: warn
