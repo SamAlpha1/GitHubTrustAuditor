@@ -29,6 +29,15 @@ jobs:
         run: |
           mkdir -p _site
           cat site.part01 site.part02 site.part03 site.part04 site.part05 | base64 --decode | gzip --decompress > _site/index.html
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('_site/index.html')
+          s = p.read_text()
+          start = s.index('async function checkSupport()')
+          end = s.index('\nfunction showGate', start)
+          new = """async function checkSupport(){let who;try{who=norm($('#visitor').value)}catch(e){showGate(e.message,'bad');return}$('#verify').disabled=true;showGate(lang==='fa'?'در حال تأیید استار و فورک…':'Verifying Star and Fork…','');try{if(who.toLowerCase()==='samalpha1'){localStorage.setItem('gta_support_ok',who);unlock(who);showGate(lang==='fa'?'✅ حالت مالک: اسکنر برای تست باز شد. صاحب ریپو نمی‌تواند ریپوی خودش را به همان اکانت Fork کند.':'✅ Owner mode: scanner unlocked for testing. A repository owner cannot fork the same repository back into the same account.','ok');return}let starred=false,forked=false;for(let p=1;p<=10&&!starred;p++){let a=await gj(`/users/${encodeURIComponent(who)}/starred?per_page=100&page=${p}&sort=created&direction=desc`);starred=a.some(x=>(x.full_name||'').toLowerCase()===TOOL_REPO.toLowerCase());if(a.length<100)break}try{let f=await gj(`/repos/${encodeURIComponent(who)}/GitHubTrustAuditor`);forked=!!(f.fork&&((f.parent&&f.parent.full_name||'').toLowerCase()===TOOL_REPO.toLowerCase()||(f.source&&f.source.full_name||'').toLowerCase()===TOOL_REPO.toLowerCase()))}catch(e){if(!/not found|پیدا نشد|404/i.test(e.message))throw e}if(starred&&forked){localStorage.setItem('gta_support_ok',who);unlock(who);showGate(lang==='fa'?`✅ Star و Fork برای @${who} تأیید شد؛ اسکنر باز شد.`:`✅ Star and Fork verified for @${who}; scanner unlocked.`,'ok')}else{let miss=[];if(!starred)miss.push('Star');if(!forked)miss.push('Fork');showGate((lang==='fa'?'هنوز تأیید نشد: ':'Not verified yet: ')+miss.join(' + '),'bad')}}catch(e){if(/HTTP 401|HTTP 403|rate limit/i.test(e.message)){localStorage.setItem('gta_support_ok',who);unlock(who);showGate(lang==='fa'?'⚠️ GitHub تأیید عمومی Star/Fork را برای این درخواست محدود کرد. اسکنر باز شد، اما این پیام تأیید نمی‌کند که Star/Fork واقعاً انجام شده است.':'⚠️ GitHub limited public Star/Fork verification for this request. The scanner is unlocked, but this message does not claim the Star/Fork was verified.','warn')}else{showGate(e.message,'bad')}}finally{$('#verify').disabled=false}}"""
+          p.write_text(s[:start] + new + s[end:])
+          PY
           touch _site/.nojekyll
           test -s _site/index.html
       - uses: actions/configure-pages@v6
