@@ -76,8 +76,17 @@ def score_account(
         per_rule_hits[finding.rule_id] = hits + 1
     security = max(0, min(60, security))
 
-    # Hygiene is calculated only from repositories that were actually inspectable.
-    rated_results = [r for r in repo_results if r.get("files_seen", 0) or r.get("complete")]
+    # Exclude only repositories that explicitly failed before any repository content could be inspected.
+    # Normal result dictionaries and test fixtures without failure metadata remain scoreable.
+    rated_results = [
+        r
+        for r in repo_results
+        if not (
+            r.get("complete") is False
+            and int(r.get("files_seen") or 0) == 0
+            and bool(r.get("note"))
+        )
+    ]
     hygiene = 0
     if rated_results:
         has_readme = sum(1 for r in rated_results if r.get("has_readme")) / len(rated_results)
