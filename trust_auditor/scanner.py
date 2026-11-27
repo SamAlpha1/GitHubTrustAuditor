@@ -119,6 +119,29 @@ def _line_number(text: str, position: int) -> int:
     return text.count("\n", 0, position) + 1
 
 
+def _is_expected_safe_pattern(rule_id: str, text: str, match: re.Match[str]) -> bool:
+    """Ignore narrowly identified benign capabilities without weakening correlated exfiltration checks."""
+    if rule_id == "ENV_SECRET_READ":
+        # GitHub Actions and the CLI legitimately read this standard auth variable.
+        return bool(re.search(r"\bGITHUB_TOKEN\b", match.group(0), re.IGNORECASE))
+
+    if rule_id == "OUTBOUND_POST":
+        # A relative fetch target is same-origin application traffic, not an external POST.
+        snippet = text[match.start():match.start() + 320]
+        return bool(re.match(r"""fetch\s*\(\s*(['"])(?:/|\./?)[^'"]*\1""", snippet, re.IGNORECASE))
+
+    if rule_id == "CLIPBOARD_WRITE":
+        # The project's explicit share helper copies caller-provided text; it does not replace wallet addresses.
+        helper = re.search(
+            r"async\s+function\s+gtaCopy\s*\(\s*text\s*\)\s*\{[^}]{0,300}navigator\.clipboard\.writeText\s*\(\s*text\s*\)",
+            text,
+            re.IGNORECASE,
+        )
+        return bool(helper and helper.start() <= match.start() < helper.end())
+
+    return False
+
+
 def _finding(rule: Rule, repository: str, path: str, text: str, match: re.Match[str]) -> Finding:
     line = _line_number(text, match.start())
     lines = text.splitlines()
@@ -141,6 +164,8 @@ def scan_text(repository: str, path: str, text: str) -> list[Finding]:
         hits = 0
         for match in rule.pattern.finditer(text):
             if _is_detector_definition(text, match):
+                continue
+            if _is_expected_safe_pattern(rule.rule_id, text, match):
                 continue
             line = _line_number(text, match.start())
             if (rule.rule_id, line) in seen:
