@@ -4,6 +4,10 @@ All notable changes to GitHub Trust Auditor are documented here.
 
 ## [Unreleased]
 
+_No unreleased changes yet._
+
+## [1.2.0] - 2026-11-27
+
 ### Added
 - Repository-only CLI scans using `owner/repository` or a GitHub repository URL.
 - Repository-only scoring excludes account-age, stars, forks, and contribution activity.
@@ -21,8 +25,8 @@ All notable changes to GitHub Trust Auditor are documented here.
 - Expanded end-to-end smoke testing of the local reusable Action, including account and pinned repository-revision scans.
 
 ### Validation
-- Latest main-branch CI run passed.
-- Latest self-audit run passed.
+- Main-branch CI passed.
+- Account self-audit passed.
 - GitHub Pages build and deployment passed.
 - Reusable Action smoke test passed and verified non-empty JSON and HTML reports.
 
