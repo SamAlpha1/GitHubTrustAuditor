@@ -225,8 +225,7 @@ def scan_text(repository: str, path: str, text: str) -> list[Finding]:
         sinks = [m for m in NETWORK_SINK.finditer(text) if not _is_detector_definition(text, m)]
         for variable, source_position, browser_form_source in sources:
             for sink in sinks:
-                call_window = text[sink.start():sink.start() + 1200]
-                if re.search(rf"\b{re.escape(variable)}\b", call_window):
+                if _network_call_references_variable(text, sink, variable):
                     source_line = _line_number(text, source_position)
                     if ("SECRET_TO_NETWORK", source_line) not in seen:
                         if browser_form_source:
