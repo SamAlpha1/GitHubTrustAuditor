@@ -62,7 +62,8 @@ jobs:
         with:
           username: ${{ inputs.username }}
           github-token: ${{ github.token }}
-\n      - name: Upload reports
+
+      - name: Upload reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
