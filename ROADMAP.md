@@ -10,7 +10,7 @@ Public roadmap for high-value improvements. This roadmap reflects the current `m
 - Read-only pull-request auditing through the GitHub API; untrusted PR code is not checked out or executed.
 - Bilingual, downloadable/shareable audit score cards with direct report and scan links.
 - Local, clearable score history with the latest ten results retained in the browser only.
-- Regression coverage for benign scanner capabilities and genuinely suspicious external POST, sensitive environment access, wallet-address clipboard replacement, and sensitive-data source-to-network-sink correlation (including browser password fields, nested payloads, bounded local variable aliases, and unrelated nearby network calls).
+- Regression coverage for benign scanner capabilities and genuinely suspicious external POST, sensitive environment access, wallet-address clipboard replacement, and sensitive-data source-to-network-sink correlation (including browser password fields, nested payloads, bounded local variable aliases, quoted strings, comment-only references, and unrelated nearby network calls).
 - CI validation for Python tests, YAML workflows, CLI entry points, Pages score-card output, and reusable Action report generation.
 
 ## Near term
