@@ -79,6 +79,18 @@ SENSITIVE_SOURCE = _rx(r"(?:private[_ -]?key|secret[_ -]?key|seed[_ -]?phrase|mn
 NETWORK_SINK = _rx(r"(?:requests\.post|axios\.post|fetch\s*\(|http\.post|https\.request|webhook|api\.telegram\.org|discord(?:app)?\.com/api/webhooks|socket\.send|sendall\(|curl\s|Invoke-RestMethod|Invoke-WebRequest)")
 SUSPICIOUS_INSTALL = _rx(r"(?:curl|wget|powershell|Invoke-WebRequest|bash\s+-c|sh\s+-c|node\s+-e|python\s+-c)")
 
+def _is_detector_definition(text: str, match: re.Match[str]) -> bool:
+    line_start = text.rfind("\n", 0, match.start()) + 1
+    line_end = text.find("\n", match.start())
+    line = text[line_start:] if line_end < 0 else text[line_start:line_end]
+    stripped = line.lstrip()
+    if stripped.startswith(("#", "//", "/*", "*", "<!--", ";")):
+        return True
+    if "_rx(" in line or "re.compile(" in line:
+        return True
+    return bool(re.match(r"(?:SENSITIVE_SOURCE|NETWORK_SINK|SUSPICIOUS_INSTALL)\s*=", stripped))
+
+
 
 def is_text_candidate(path: str, size: int, max_size: int = 1_000_000) -> bool:
     if size <= 0 or size > max_size:
@@ -128,8 +140,10 @@ def scan_text(repository: str, path: str, text: str) -> list[Finding]:
             if hits >= 8:
                 break
 
-    sources = list(SENSITIVE_SOURCE.finditer(text))
-    sinks = list(NETWORK_SINK.finditer(text))
+    # Ignore comments and detector declarations: the scanner's own regex catalog
+    # contains both sensitive-data terms and network-sink terms by design.
+    sources = [m for m in SENSITIVE_SOURCE.finditer(text) if not _is_detector_definition(text, m)]
+    sinks = [m for m in NETWORK_SINK.finditer(text) if not _is_detector_definition(text, m)]
     if sources and sinks:
         for source in sources[:4]:
             source_line = _line_number(text, source.start())
