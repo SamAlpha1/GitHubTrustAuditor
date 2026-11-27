@@ -49,6 +49,8 @@ jobs:
 | `max-files` | no | `350` | Maximum candidate text files per repository |
 | `max-file-size` | no | `1000000` | Maximum text blob size in bytes |
 
+The `owner/repository` target and `ref` input are available on the current `main` revision. The published `v1` tag remains the earlier account-scan interface until the next version is released.
+
 ## Scan one repository or a pull-request revision
 
 The same `username` input accepts a repository target. The optional `ref` input lets the Action inspect a specific commit, which is useful for pull-request checks:
