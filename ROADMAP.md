@@ -5,7 +5,7 @@ Public roadmap for high-value improvements.
 ## Completed
 
 - Repository-only CLI scan mode for `owner/repository` and GitHub repository URLs, with explicit partial-coverage reporting.
-- Reusable Action support for pull-request head revisions and scheduled repository audits, with read-only permissions and no PR-code checkout.
+- Reusable Action support for pull-request head revisions, pushes, and scheduled repository audits, with read-only permissions and no PR-code checkout.
 
 ## Near term
 
