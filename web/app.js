@@ -57,6 +57,14 @@ const T = {
     supportCopy: "No significant malicious indicators were detected in the scanned coverage. If you actually find a project useful, consider starring or forking it on GitHub.",
     important: "Important",
     coverageNote: "This is static technical analysis, not proof that a person is honest or a scammer. Private third-party repositories cannot be inspected without legitimate access.",
+    coverageDetailsTitle: "Scan coverage details",
+    coverageCandidate: "Eligible text files",
+    coverageScanned: "Successfully scanned",
+    coverageSkipped: "Could not be read",
+    coverageNotAttempted: "Not attempted (file limit)",
+    coverageComplete: "All eligible files were scanned successfully.",
+    coveragePartial: "Coverage is partial. Review the reasons below before relying on a clean result.",
+    coverageReasons: "Reasons and notes",
     footer: "Defensive, read-only analysis",
     open: "Open",
     star: "Star",
@@ -160,6 +168,14 @@ const T = {
     supportCopy: "در محدوده اسکن‌شده نشانه مهمی از رفتار مخرب پیدا نشد. اگر واقعاً پروژه برایت مفید است، می‌توانی آن را در GitHub استار یا فورک کنی.",
     important: "مهم",
     coverageNote: "این نتیجه تحلیل فنی و استاتیک است و اثبات نمی‌کند یک شخص حتماً سالم یا اسکمر است. ریپوهای پرایوت اشخاص دیگر بدون دسترسی قانونی قابل بررسی نیستند.",
+    coverageDetailsTitle: "جزئیات پوشش اسکن",
+    coverageCandidate: "فایل‌های متنی واجد شرایط",
+    coverageScanned: "با موفقیت اسکن‌شده",
+    coverageSkipped: "غیرقابل‌خواندن",
+    coverageNotAttempted: "بررسی‌نشده به‌علت سقف فایل",
+    coverageComplete: "تمام فایل‌های واجد شرایط با موفقیت اسکن شدند.",
+    coveragePartial: "پوشش اسکن ناقص است. پیش از اعتماد به نتیجه پاک، علت‌های زیر را بررسی کنید.",
+    coverageReasons: "علت‌ها و توضیحات",
     footer: "تحلیل دفاعی و فقط خواندنی",
     open: "باز کردن",
     star: "استار",
@@ -563,6 +579,26 @@ function playRiskAlert(verdict) {
   }
 }
 
+function renderCoverageDetails(coverage) {
+  const seen = Math.max(0, Number(coverage.files_seen || 0));
+  const scanned = Math.max(0, Number(coverage.files_scanned || 0));
+  const skipped = Math.max(0, Number(coverage.files_skipped || 0));
+  const notAttempted = Math.max(0, seen - scanned - skipped);
+  const notes = Array.isArray(coverage.notes) ? coverage.notes.filter(Boolean) : [];
+  const status = coverage.partial ? tr("coveragePartial") : tr("coverageComplete");
+  const rows = [
+    [tr("coverageCandidate"), seen],
+    [tr("coverageScanned"), scanned],
+    [tr("coverageSkipped"), skipped],
+    [tr("coverageNotAttempted"), notAttempted],
+  ];
+  const noteList = notes.length ? "<ul class=\"coverage-reasons\">" + notes.map(note => "<li>" + escapeHtml(note) + "</li>").join("") + "</ul>" : "";
+  $("#coverageBreakdown").innerHTML =
+    "<div class=\"coverage-detail-head\"><strong>" + escapeHtml(tr("coverageDetailsTitle")) + "</strong><span class=\"coverage-status " + (coverage.partial ? "partial" : "complete") + "\">" + escapeHtml(coverage.partial ? tr("partial") : tr("complete")) + "</span></div>" +
+    "<p class=\"coverage-status-copy\">" + escapeHtml(status) + "</p>" +
+    "<div class=\"coverage-metrics\">" + rows.map(row => "<div><span>" + escapeHtml(row[0]) + "</span><strong>" + formatNumber(row[1]) + "</strong></div>").join("") + "</div>" +
+    (noteList ? "<div class=\"coverage-reasons-wrap\"><strong>" + escapeHtml(tr("coverageReasons")) + "</strong>" + noteList + "</div>" : "");
+}
 function renderReport(report, withAlert = true) {
   state.report = report;
   const findings = allFindings(report);
@@ -607,6 +643,7 @@ function renderReport(report, withAlert = true) {
     : "";
   $("#coverageNote").textContent =
     `${tr("coverageNote")} ${repoCount} repos / ${scanned} files scanned${privateNote}${coverage.partial ? " • PARTIAL COVERAGE" : ""}.`;
+  renderCoverageDetails(coverage);
 
   $("#results").classList.remove("hidden");
   if (withAlert) playRiskAlert(verdict);
