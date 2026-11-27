@@ -61,7 +61,7 @@ RULES: tuple[Rule, ...] = (
     Rule("CLIPBOARD_WRITE", "MEDIUM", "clipboard", _rx(r"(?:clipboard\.write|writeText\(|pyperclip\.copy|Set-Clipboard|navigator\.clipboard\.writeText)"), "Writes clipboard contents", "medium"),
     Rule("WALLET_ADDRESS_REPLACE", "HIGH", "clipboard", _rx(r"(?:navigator\.clipboard|clipboard\.(?:readText|writeText)|readText\(|writeText\()[^\n]{0,240}(?:0x[a-f0-9]{40}|(?:btc|eth|sol|wallet)[_ -]?address)[^\n]{0,180}(?:replace|write|copy)"), "Possible clipboard wallet-address replacement logic", "medium"),
     Rule("WEBHOOK", "MEDIUM", "network", _rx(r"(?:discord(?:app)?\.com/api/webhooks|hooks\.slack\.com|webhook\.site|api\.telegram\.org/bot)"), "Webhook or bot endpoint present", "high"),
-    Rule("OUTBOUND_POST", "LOW", "network", _rx(r"(?:requests\.post|axios\.post|fetch\s*\(|http\.post|https\.request|urllib\.request|curl\s+[^\n]*(?:-d|--data)|Invoke-WebRequest|Invoke-RestMethod)"), "Outbound HTTP/network operation present", "medium"),
+    Rule("OUTBOUND_POST", "LOW", "network", _rx(r"(?:requests\.post|axios\.post|http\.post|https\.request|urllib\.request|fetch\s*\([^)]{0,240}?\bmethod\s*:\s*['\"]POST['\"]|curl\s+[^\n]*(?:-d|--data)|Invoke-WebRequest|Invoke-RestMethod)"), "Outbound HTTP/network operation present", "medium"),
     Rule("RAW_SOCKET", "MEDIUM", "network", _rx(r"(?:socket\.socket|net\.Socket|TcpClient|WebSocket\s*\()"), "Raw socket or websocket communication present", "medium"),
     Rule("BASE64_EXEC", "HIGH", "obfuscation", _rx(r"(?:eval|exec|Function)\s*\([^\n]{0,120}(?:b64decode|atob|fromCharCode|base64)"), "Decoded/obfuscated content appears to be executed", "high"),
     Rule("EVAL_EXEC", "MEDIUM", "obfuscation", _rx(r"\b(?:eval|exec)\s*\("), "Dynamic code execution present", "medium"),
@@ -70,7 +70,7 @@ RULES: tuple[Rule, ...] = (
     Rule("UNLIMITED_APPROVAL", "HIGH", "wallet-permission", _rx(r"(?:approve|allowance|permit)[^\n]{0,180}(?:MaxUint256|MAX_UINT|2\s*\*\*\s*256\s*-\s*1|0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)"), "Possible unlimited token approval/permit", "medium"),
     Rule("SIGN_TX", "MEDIUM", "wallet-transaction", _rx(r"(?:signTransaction|sendTransaction|sendRawTransaction|eth_sendTransaction|wallet\.sendTransaction|signAndSendTransaction)"), "Code can sign or submit blockchain transactions", "medium"),
     Rule("ENV_SECRET_READ", "LOW", "credential-access", _rx(r"(?:process\.env|os\.environ|os\.getenv|getenv\(|env::var)[^\n]{0,100}(?:PRIVATE_KEY|SEED|MNEMONIC|PASSWORD|TOKEN|SECRET|COOKIE|API_KEY)"), "Reads a sensitive environment variable", "medium"),
-    Rule("BROWSER_STORAGE_TOKEN", "MEDIUM", "credential-access", _rx(r"(?:localStorage|sessionStorage|document\.cookie)[^\n]{0,120}(?:token|auth|session|key|wallet)"), "Reads or writes sensitive browser storage", "medium"),
+    Rule("BROWSER_STORAGE_TOKEN", "MEDIUM", "credential-access", _rx(r"(?:localStorage|sessionStorage|document\.cookie)[^\n]{0,120}(?:token|auth|session|secret|wallet|private[_ -]?key|api[_ -]?key)"), "Reads or writes sensitive browser storage", "medium"),
     Rule("WORKFLOW_WRITE_ALL", "HIGH", "ci-security", _rx(r"(?m)^\s*permissions\s*:\s*write-all\s*$"), "GitHub Actions workflow grants broad write-all permissions", "high"),
     Rule("WORKFLOW_SECRET_SHELL", "HIGH", "ci-security", _rx(r"\$\{\{\s*secrets\.[A-Za-z0-9_]+\s*\}\}[^\n]{0,220}(?:curl|wget|Invoke-WebRequest|nc\s|ssh\s)"), "GitHub Actions secret may be passed to a network-capable command", "medium", True),
 )
