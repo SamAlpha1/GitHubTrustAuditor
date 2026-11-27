@@ -50,7 +50,7 @@ runs:
       run: |
         python -m pip install --disable-pip-version-check -r "${{ github.action_path }}/requirements.txt"
 
-    - name: Audit GitHub account
+    - name: Audit GitHub account or repository
       id: audit
       shell: bash
       env:
