@@ -105,13 +105,15 @@ def audit_repository(
         item for item in blobs
         if is_text_candidate(str(item.get("path", "")), int(item.get("size") or 0), max_file_size)
     ]
-    coverage.files_seen += len(candidates)
-    if len(candidates) > max_files:
+    candidate_count = len(candidates)
+    coverage.files_seen += candidate_count
+    if candidate_count > max_files:
         candidates = candidates[:max_files]
         complete = False
         coverage.partial = True
         coverage.notes.append(f"{full_name}: candidate file cap reached ({max_files})")
 
+    scanned_files = 0
     for item in candidates:
         path = str(item["path"])
         try:
@@ -124,8 +126,12 @@ def audit_repository(
             continue
         if text is None:
             coverage.files_skipped += 1
+            complete = False
+            coverage.partial = True
+            coverage.notes.append(f"{full_name}/{path}: candidate file could not be decoded as text")
             continue
         coverage.files_scanned += 1
+        scanned_files += 1
         findings.extend(scan_text(full_name, path, text))
         if path.lower() in SPECIAL_PATHS["readme"]:
             readme_text = text[:250_000]
@@ -181,8 +187,8 @@ def audit_repository(
         "forks": int(repo.get("forks_count") or 0),
         "open_issues": int(repo.get("open_issues_count") or 0),
         "language": repo.get("language"),
-        "files_scanned": sum(1 for item in candidates if is_text_candidate(str(item.get("path", "")), int(item.get("size") or 0), max_file_size)),
-        "files_seen": len(blobs),
+        "files_scanned": scanned_files,
+        "files_seen": candidate_count,
         "has_readme": has_readme,
         "has_license": has_license,
         "has_security": has_security,
