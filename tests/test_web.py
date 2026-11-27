@@ -67,3 +67,12 @@ def test_coverage_breakdown_never_returns_negative_counts():
         "unreadable_or_unavailable": 1,
         "excluded_by_file_limit": 0,
     }
+
+def test_bilingual_web_coverage_breakdown_shows_completion_rate():
+    from pathlib import Path
+
+    app = (Path(__file__).parents[1] / "web" / "app.js").read_text(encoding="utf-8")
+    assert 'coverageRate: "Scan completion"' in app
+    assert 'coverageRate: "درصد تکمیل اسکن"' in app
+    assert "Math.round((scanned / seen) * 100)" in app
+    assert '[tr("coverageRate"), `${formatNumber(completionRate)}%`]' in app
