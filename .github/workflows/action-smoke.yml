@@ -7,6 +7,7 @@ on:
       - action.yml
       - GITHUB_ACTION.md
       - examples/github-trust-audit.yml
+      - .github/workflows/self-audit.yml
       - trust_auditor/scoring.py
       - trust_auditor/scanner.py
       - trust_auditor/cli.py
@@ -26,6 +27,15 @@ jobs:
         uses: ./
         with:
           username: SamAlpha1
+          github-token: ${{ github.token }}
+          max-files: '30'
+          max-file-size: '500000'
+
+      - name: Run repository revision smoke test
+        uses: ./
+        with:
+          username: SamAlpha1/GitHubTrustAuditor
+          ref: ${{ github.sha }}
           github-token: ${{ github.token }}
           max-files: '30'
           max-file-size: '500000'
