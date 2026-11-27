@@ -2,6 +2,14 @@
 
 All notable changes to GitHub Trust Auditor are documented here.
 
+## [Unreleased]
+
+### Added
+- Repository-only CLI scans using `owner/repository` or a GitHub repository URL.
+- Repository-only scoring excludes account-age, stars, forks, and contribution activity.
+- Exact candidate-file coverage counts and explicit partial status when candidate text files cannot be decoded.
+
+
 ## [1.0.0] - 2026-09-03
 
 ### Added
