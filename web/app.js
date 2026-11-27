@@ -60,6 +60,7 @@ const T = {
     coverageDetailsTitle: "Scan coverage details",
     coverageCandidate: "Eligible text files",
     coverageScanned: "Successfully scanned",
+    coverageRate: "Scan completion",
     coverageSkipped: "Could not be read",
     coverageNotAttempted: "Not attempted (file limit)",
     coverageComplete: "All eligible files were scanned successfully.",
@@ -171,6 +172,7 @@ const T = {
     coverageDetailsTitle: "جزئیات پوشش اسکن",
     coverageCandidate: "فایل‌های متنی واجد شرایط",
     coverageScanned: "با موفقیت اسکن‌شده",
+    coverageRate: "درصد تکمیل اسکن",
     coverageSkipped: "غیرقابل‌خواندن",
     coverageNotAttempted: "بررسی‌نشده به‌علت سقف فایل",
     coverageComplete: "تمام فایل‌های واجد شرایط با موفقیت اسکن شدند.",
@@ -584,11 +586,13 @@ function renderCoverageDetails(coverage) {
   const scanned = Math.max(0, Number(coverage.files_scanned || 0));
   const skipped = Math.max(0, Number(coverage.files_skipped || 0));
   const notAttempted = Math.max(0, seen - scanned - skipped);
+  const completionRate = seen > 0 ? Math.round((scanned / seen) * 100) : 0;
   const notes = Array.isArray(coverage.notes) ? coverage.notes.filter(Boolean) : [];
   const status = coverage.partial ? tr("coveragePartial") : tr("coverageComplete");
   const rows = [
     [tr("coverageCandidate"), seen],
     [tr("coverageScanned"), scanned],
+    [tr("coverageRate"), `${formatNumber(completionRate)}%`],
     [tr("coverageSkipped"), skipped],
     [tr("coverageNotAttempted"), notAttempted],
   ];
