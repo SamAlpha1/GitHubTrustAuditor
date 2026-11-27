@@ -177,7 +177,8 @@ def _network_call_references_variable(text: str, sink: re.Match[str], variable: 
             elif char == ")":
                 depth -= 1
                 if depth == 0:
-                    return bool(re.search(rf"\b{re.escape(variable)}\b", "".join(visible)))
+                    code_only = re.sub(r"/\*.*?\*/|//[^\n]*", " ", "".join(visible), flags=re.S)
+                    return bool(re.search(rf"\b{re.escape(variable)}\b", code_only))
                 visible.append(char)
             else:
                 visible.append(char)
