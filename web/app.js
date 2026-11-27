@@ -28,7 +28,6 @@ const T = {
     followers: "Followers",
     accountAge: "Account age",
     coverage: "Scan coverage",
-    downloadScoreCard: "Download share card",
     scoreBreakdownLabel: "SCORE BREAKDOWN",
     scoreBreakdown: "Why this account got this score",
     security: "Security",
@@ -132,7 +131,6 @@ const T = {
     followers: "دنبال‌کننده",
     accountAge: "سن اکانت",
     coverage: "پوشش اسکن",
-    downloadScoreCard: "دانلود کارت اشتراک‌گذاری",
     scoreBreakdownLabel: "جزئیات امتیاز",
     scoreBreakdown: "این امتیاز از کجا آمده؟",
     security: "امنیت",
@@ -565,94 +563,6 @@ function playRiskAlert(verdict) {
   }
 }
 
-
-function downloadScoreCard() {
-  if (!state.report) return;
-  const report = state.report;
-  const score = report.score || {};
-  const coverage = report.coverage || {};
-  const username = report.username || report.profile?.login || "GitHub";
-  const fa = state.lang === "fa";
-  const labels = fa
-    ? { title: "گزارش امنیت GitHub", score: "امتیاز کل", security: "امنیت", hygiene: "سلامت ریپو", history: "سابقه", contributions: "فعالیت", coverage: "پوشش اسکن", repos: "ریپو", files: "فایل بررسی‌شده", partial: "پوشش ناقص", complete: "پوشش کامل", footer: "تحلیل استاتیک دفاعی • بدون اجرای کد هدف" }
-    : { title: "GITHUB TRUST REPORT", score: "OVERALL SCORE", security: "SECURITY", hygiene: "REPO HYGIENE", history: "HISTORY", contributions: "ACTIVITY", coverage: "SCAN COVERAGE", repos: "REPOSITORIES", files: "FILES SCANNED", partial: "PARTIAL COVERAGE", complete: "COMPLETE COVERAGE", footer: "DEFENSIVE STATIC ANALYSIS • TARGET CODE NEVER EXECUTED" };
-  const canvas = document.createElement("canvas");
-  canvas.width = 1200;
-  canvas.height = 630;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-  const rounded = (x, y, w, h, radius) => {
-    ctx.beginPath();
-    ctx.roundRect(x, y, w, h, radius);
-  };
-  const gradient = ctx.createLinearGradient(0, 0, 1200, 630);
-  gradient.addColorStop(0, "#07152d");
-  gradient.addColorStop(1, "#123d75");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 1200, 630);
-  ctx.fillStyle = "rgba(255,255,255,.07)";
-  rounded(42, 42, 1116, 546, 30);
-  ctx.fill();
-  ctx.fillStyle = "#77aaff";
-  ctx.font = "800 19px Arial, sans-serif";
-  ctx.fillText("◈  GITHUB TRUST AUDITOR", 82, 98);
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "700 36px Arial, sans-serif";
-  ctx.fillText(labels.title, 82, 157);
-  ctx.fillStyle = "#b9c9df";
-  ctx.font = "600 25px Arial, sans-serif";
-  ctx.fillText("@" + username, 82, 205);
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "800 112px Arial, sans-serif";
-  ctx.fillText(String(score.total ?? "—"), 82, 360);
-  ctx.fillStyle = "#a9bdd8";
-  ctx.font = "700 25px Arial, sans-serif";
-  ctx.fillText("/ 100", 270, 358);
-  ctx.fillStyle = "#77aaff";
-  ctx.font = "800 17px Arial, sans-serif";
-  ctx.fillText(labels.score, 86, 397);
-  const verdict = String(score.verdict || "UNKNOWN");
-  const verdictColor = verdict === "TRUSTED" ? "#4ade80" : verdict === "LOW RISK" ? "#a3e635" : verdict === "CAUTION" ? "#fbbf24" : "#fb7185";
-  ctx.fillStyle = verdictColor;
-  rounded(82, 425, 250, 48, 24);
-  ctx.fill();
-  ctx.fillStyle = "#07152d";
-  ctx.font = "800 19px Arial, sans-serif";
-  ctx.fillText(verdict, 103, 456);
-  const metrics = [
-    [labels.security, score.security, "/60"],
-    [labels.hygiene, score.hygiene, "/20"],
-    [labels.history, score.history, "/12"],
-    [labels.contributions, score.contributions, "/8"],
-  ];
-  metrics.forEach((item, index) => {
-    const x = 485 + (index % 2) * 300;
-    const y = 250 + Math.floor(index / 2) * 112;
-    ctx.fillStyle = "rgba(255,255,255,.09)";
-    rounded(x, y, 270, 82, 16);
-    ctx.fill();
-    ctx.fillStyle = "#a9bdd8";
-    ctx.font = "700 14px Arial, sans-serif";
-    ctx.fillText(item[0], x + 20, y + 27);
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "800 30px Arial, sans-serif";
-    ctx.fillText(String(item[1] ?? "—") + item[2], x + 20, y + 62);
-  });
-  const repoCount = (report.repositories || []).length;
-  const fileCount = coverage.files_scanned ?? (report.repositories || []).reduce((sum, repo) => sum + Number(repo.files_scanned || 0), 0);
-  ctx.fillStyle = "#c5d4e8";
-  ctx.font = "600 17px Arial, sans-serif";
-  ctx.fillText(labels.coverage + ": " + (coverage.partial ? labels.partial : labels.complete), 485, 492);
-  ctx.fillText(repoCount + " " + labels.repos + "  •  " + fileCount + " " + labels.files, 485, 525);
-  ctx.fillStyle = "#8ea6c5";
-  ctx.font = "600 14px Arial, sans-serif";
-  ctx.fillText(labels.footer, 82, 550);
-  const link = document.createElement("a");
-  link.download = "github-trust-audit-" + username.replace(/[^a-z0-9_-]/gi, "-") + ".png";
-  link.href = canvas.toDataURL("image/png");
-  link.click();
-}
-
 function renderReport(report, withAlert = true) {
   state.report = report;
   const findings = allFindings(report);
@@ -749,8 +659,6 @@ $("#scanForm").addEventListener("submit", event => {
   const value = $("#targetInput").value.trim();
   if (value) scanTarget(value);
 });
-
-$("#downloadScoreCard").addEventListener("click", downloadScoreCard);
 
 $("#langToggle").addEventListener("click", () => {
   state.lang = state.lang === "fa" ? "en" : "fa";
