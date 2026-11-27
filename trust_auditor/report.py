@@ -57,6 +57,15 @@ def coverage_breakdown(coverage: dict[str, Any]) -> dict[str, int]:
     }
 
 
+def coverage_completion_rate(coverage: dict[str, Any]) -> int | None:
+    """Return the percentage of candidate files scanned, or None when no candidates exist."""
+    breakdown = coverage_breakdown(coverage)
+    candidates = breakdown["candidate_files"]
+    if candidates == 0:
+        return None
+    return min(100, round(breakdown["scanned_files"] / candidates * 100))
+
+
 def _repo_risk(findings: list[Finding]) -> str:
     severities = {f.severity for f in findings}
     if "CRITICAL" in severities:
@@ -82,6 +91,8 @@ def print_terminal(report: dict[str, Any]) -> None:
         f"{breakdown['scanned_files']}/{breakdown['candidate_files']} candidate files scanned"
         + (" [yellow](PARTIAL)[/yellow]" if coverage.get("partial") else "")
     )
+    completion = coverage_completion_rate(coverage)
+    console.print(f"Scan completion: {completion}%." if completion is not None else "Scan completion: not applicable (no candidate files).")
     console.print(
         "Files not scanned: "
         f"{breakdown['unreadable_or_unavailable']} unreadable/unavailable; "
@@ -190,8 +201,11 @@ def write_html(report: dict[str, Any], path: str) -> None:
     coverage_notes = "".join(
         f"<li>{html.escape(str(note))}</li>" for note in (coverage.get("notes") or [])
     )
+    completion = coverage_completion_rate(coverage)
+    completion_label = f"{completion}%" if completion is not None else "Not applicable (no candidate files)"
     coverage_html = (
         "<p>"
+        f"Scan completion: <strong>{completion_label}</strong> · "
         f"Status: <strong>{'PARTIAL' if coverage.get('partial') else 'COMPLETE'}</strong> · "
         f"Candidate files: {breakdown['candidate_files']} · "
         f"Scanned: {breakdown['scanned_files']} · "
