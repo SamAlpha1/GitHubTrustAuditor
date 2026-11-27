@@ -18,7 +18,18 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install --upgrade pip
-      - run: pip install -r requirements.txt pytest
+      - run: pip install -r requirements.txt pytest pyyaml
+      - name: Validate YAML manifests and workflows
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          files = sorted(Path(".").rglob("*.yml")) + sorted(Path(".").rglob("*.yaml"))
+          for path in files:
+              yaml.safe_load(path.read_text(encoding="utf-8"))
+          print(f"Validated {len(files)} YAML files")
+          PY
       - run: python -m compileall -q auditor.py web_server.py trust_auditor
       - run: python -m pytest -q
       - run: python auditor.py --help
