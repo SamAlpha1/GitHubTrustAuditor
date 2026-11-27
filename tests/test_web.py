@@ -89,3 +89,16 @@ def test_pages_score_history_is_local_bounded_and_clearable():
     assert "score.textContent=(Number(v.score)||0)+'/100'" in patch
     assert "body.textContent=''" in patch
     assert "v.evidence" not in patch[patch.index("function gtaSaveScoreHistory"):patch.index("async function gtaCopy")]
+
+
+def test_coverage_completion_rate_handles_partial_and_empty_scans():
+    from trust_auditor.report import coverage_completion_rate
+
+    assert coverage_completion_rate({"files_seen": 20, "files_scanned": 12, "files_skipped": 3}) == 60
+    assert coverage_completion_rate({"files_seen": 0, "files_scanned": 0, "files_skipped": 0}) is None
+
+
+def test_coverage_completion_rate_never_exceeds_one_hundred_percent():
+    from trust_auditor.report import coverage_completion_rate
+
+    assert coverage_completion_rate({"files_seen": 2, "files_scanned": 4, "files_skipped": 0}) == 100
