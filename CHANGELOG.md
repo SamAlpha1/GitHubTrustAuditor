@@ -12,6 +12,7 @@ All notable changes to GitHub Trust Auditor are documented here.
 - A read-only pull-request, main-branch push, and weekly scheduled audit workflow; pull-request source is fetched through the GitHub API and never checked out or executed.
 - Safer composite-action argument handling through environment variables.
 - Prevent detector regex definitions and comments from being mistaken for sensitive-data-to-network flows.
+- Add configurable CLI and reusable Action failure thresholds: `critical`, `high`, `caution`, or `never`.
 
 
 ## [1.0.0] - 2026-09-03
