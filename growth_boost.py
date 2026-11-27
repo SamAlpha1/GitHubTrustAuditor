@@ -134,9 +134,10 @@ function gtaPrefillFromQuery(){let u=new URLSearchParams(location.search).get('u
 
     required = [
         'id="growthShareBar"', 'id="growthShareBtn"', 'id="growthXBtn"',
-        'id="growthLinkBtn"', 'id="growthBadgeBtn"', 'id="growth-boost-style"',
+        'id="growthLinkBtn"', 'id="growthBadgeBtn"', 'id="growthCardBtn"', 'id="growth-boost-style"',
         'id="growth-meta-description"', 'function updateGrowthShare(r)',
-        'function gtaPrefillFromQuery()', 'updateGrowthShare(r);',
+        'function gtaPrefillFromQuery()', 'function gtaDownloadScoreCard(r)', 'function gtaScoreCardCoverage(r)', 'updateGrowthShare(r);',
+        "c.width=1200;c.height=630", "['SECURITY',r?.score?.security,60]", "['REPO HYGIENE',r?.score?.hygiene,20]", "['HISTORY',r?.score?.history,12]", "['CONTRIBUTIONS',r?.score?.contributions,8]", "Coverage: ", "Open report: ", "c.toBlob("
         'img.shields.io', 'https://x.com/intent/post', 'gtaPrefillFromQuery();'
     ]
     for marker in required:
