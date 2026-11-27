@@ -162,6 +162,7 @@ You can scan a single repository without auditing its owner's entire account:
 python auditor.py owner/repository
 python auditor.py https://github.com/owner/repository
 python auditor.py owner/repository --json repo-report.json --html repo-report.html
+python auditor.py owner/repository --fail-on high
 ```
 
 Repository-only reports focus on that repository's source, configuration, install behavior, and documentation. Account age, stars, forks, and contribution activity are intentionally excluded from its score. If a candidate text file cannot be read, the report marks coverage as partial rather than silently counting it as scanned.

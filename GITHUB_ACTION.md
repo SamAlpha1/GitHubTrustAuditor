@@ -47,10 +47,11 @@ jobs:
 | `username` | yes | — | GitHub account (`octocat`) or one repository (`owner/repository`) to audit |
 | `github-token` | no | empty | Optional read-only token for higher API limits |
 | `ref` | no | default branch | Branch, tag, or commit SHA; applies only to repository-only scans |
+| `fail-on` | no | `critical` | Fail at `critical`, `high`, or `caution`; use `never` to disable risk-based failure |
 | `max-files` | no | `350` | Maximum candidate text files per repository |
 | `max-file-size` | no | `1000000` | Maximum text blob size in bytes |
 
-The `owner/repository` target and `ref` input are available on the current `main` revision. The published `v1` tag remains the earlier account-scan interface until the next version is released.
+The `owner/repository` target plus the `ref` and `fail-on` inputs are available on the current `main` revision. The published `v1` tag remains the earlier account-scan interface until the next version is released.
 
 ## Scan one repository or a pull-request revision
 
@@ -67,6 +68,19 @@ The same `username` input accepts a repository target. The optional `ref` input 
 
 Use a read-only token and do not check out or execute the pull-request code. The auditor retrieves source through GitHub's read-only API.
 
+## Configurable failure threshold
+
+Set `fail-on` to control when the Action returns a failing exit code:
+
+| Value | Action fails when verdict is |
+|---|---|
+| `critical` | CRITICAL (default) |
+| `high` | HIGH RISK or CRITICAL |
+| `caution` | CAUTION, HIGH RISK, or CRITICAL |
+| `never` | Never for a risk verdict |
+
+Partial coverage still produces a warning when a report exists. API failures that prevent report generation still fail the Action.
+
 ## Outputs
 
 | Output | Meaning |
@@ -75,9 +89,9 @@ Use a read-only token and do not check out or execute the pull-request code. The
 | `report-html` | Standalone HTML report path |
 | `exit-code` | Auditor exit code |
 
-Exit codes: `0` = complete with no Critical alarm, `1` = partial coverage or an audit/API problem, `2` = Critical security alarm.
+Exit codes: `0` = below the configured risk threshold, `1` = partial coverage or an audit/API problem, `2` = configured risk threshold reached.
 
-The Action treats a completed partial-coverage report as a workflow warning rather than a hard failure. Critical findings fail the Action. If no report can be generated, the Action also fails.
+The Action treats a completed partial-coverage report as a workflow warning rather than a hard failure. The `fail-on` setting controls which risk verdicts fail the Action. If no report can be generated, the Action also fails.
 
 ## Safety
 

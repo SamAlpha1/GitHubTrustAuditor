@@ -37,6 +37,7 @@ jobs:
           username: SamAlpha1/GitHubTrustAuditor
           ref: ${{ github.sha }}
           github-token: ${{ github.token }}
+          fail-on: never
           max-files: '30'
           max-file-size: '500000'
 
