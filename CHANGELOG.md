@@ -9,7 +9,7 @@ All notable changes to GitHub Trust Auditor are documented here.
 - Repository-only scoring excludes account-age, stars, forks, and contribution activity.
 - Exact candidate-file coverage counts and explicit partial status when candidate text files cannot be decoded.
 - Reusable Action support for scanning a selected repository branch, tag, or commit SHA.
-- A read-only pull-request and weekly scheduled audit workflow; pull-request source is fetched through the GitHub API and never checked out or executed.
+- A read-only pull-request, main-branch push, and weekly scheduled audit workflow; pull-request source is fetched through the GitHub API and never checked out or executed.
 - Safer composite-action argument handling through environment variables.
 - Prevent detector regex definitions and comments from being mistaken for sensitive-data-to-network flows.
 
