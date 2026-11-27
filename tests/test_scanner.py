@@ -234,3 +234,29 @@ console.log(localCopy.length);
     findings = scan_text("owner/repo", "login.js", code)
     assert "SENSITIVE_FORM_TO_NETWORK" not in ids(findings)
     assert "SECRET_TO_NETWORK" not in ids(findings)
+
+
+def test_sensitive_variable_name_inside_string_literal_is_not_exfiltration():
+    code = '''
+const password = document.querySelector("#password").value;
+fetch("https://metrics.example.invalid/event", {
+  method: "POST",
+  body: JSON.stringify({ message: "password field submitted" })
+});
+'''
+    findings = scan_text("owner/repo", "login.js", code)
+    assert "SENSITIVE_FORM_TO_NETWORK" not in ids(findings)
+    assert "SECRET_TO_NETWORK" not in ids(findings)
+
+
+def test_sensitive_variable_name_as_property_key_string_is_not_exfiltration():
+    code = '''
+const password = document.querySelector("#password").value;
+fetch("https://metrics.example.invalid/event", {
+  method: "POST",
+  body: JSON.stringify({ "password": "not-the-variable" })
+});
+'''
+    findings = scan_text("owner/repo", "login.js", code)
+    assert "SENSITIVE_FORM_TO_NETWORK" not in ids(findings)
+    assert "SECRET_TO_NETWORK" not in ids(findings)
