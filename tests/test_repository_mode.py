@@ -110,3 +110,24 @@ def test_repository_only_scan_uses_requested_ref(monkeypatch):
     assert fake.seen_ref == "0123456789abcdef"
     assert report["scan_mode"] == "repository"
     assert report["username"] == "octocat/Hello-World"
+
+
+
+def test_repository_score_does_not_penalize_informational_capabilities():
+    from trust_auditor.cli import _repo_score
+    from trust_auditor.scanner import Finding
+
+    findings = [
+        Finding("OUTBOUND_POST", "LOW", "network", "owner/repo", "app.js", 10, "POST request", "fetch(...)", "medium"),
+        Finding("ENV_SECRET_READ", "LOW", "credential-access", "owner/repo", "client.py", 20, "Reads env token", "GITHUB_TOKEN", "medium"),
+        Finding("CLIPBOARD_WRITE", "MEDIUM", "clipboard", "owner/repo", "app.js", 30, "Writes clipboard", "writeText", "medium"),
+    ]
+    assert _repo_score(findings, True, True, True, True) == 100
+
+
+def test_repository_score_still_penalizes_confirmed_high_risk_findings():
+    from trust_auditor.cli import _repo_score
+    from trust_auditor.scanner import Finding
+
+    finding = Finding("DANGEROUS_INSTALL_HOOK", "CRITICAL", "install-execution", "owner/repo", "package.json", 1, "Executes remote code", "postinstall", "high")
+    assert _repo_score([finding], True, True, True, True) <= 30
