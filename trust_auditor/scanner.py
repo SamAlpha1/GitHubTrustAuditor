@@ -225,7 +225,14 @@ def scan_text(repository: str, path: str, text: str) -> list[Finding]:
         sinks = [m for m in NETWORK_SINK.finditer(text) if not _is_detector_definition(text, m)]
         for variable, source_position, browser_form_source in sources:
             for sink in sinks:
-                if _network_call_references_variable(text, sink, variable):
+                # Follow bounded, local assignment aliases between the sensitive
+                # source and sink (e.g. secret -> payload -> fetch body).
+                tracked = {variable}
+                for assignment in assignments.finditer(text, source_position, sink.start()):
+                    alias, expression = assignment.group(1), assignment.group(2)
+                    if any(re.search(rf"\\b{re.escape(name)}\\b", expression) for name in tracked):
+                        tracked.add(alias)
+                if any(_network_call_references_variable(text, sink, name) for name in tracked):
                     source_line = _line_number(text, source_position)
                     if ("SECRET_TO_NETWORK", source_line) not in seen:
                         if browser_form_source:
