@@ -150,6 +150,43 @@ def _finding(rule: Rule, repository: str, path: str, text: str, match: re.Match[
     return Finding(rule.rule_id, rule.severity, rule.category, repository, path, line, rule.summary, _redact(evidence, rule.redact_all), rule.confidence)
 
 
+def _network_call_references_variable(text: str, sink: re.Match[str], variable: str) -> bool:
+    """Match a source variable only inside the actual sink call/command, not nearby code."""
+    start = sink.start()
+    opening = text.find("(", sink.start(), min(len(text), sink.start() + 120))
+    if opening >= 0:
+        depth = 0
+        quote = None
+        escaped = False
+        for index in range(opening, min(len(text), opening + 4000)):
+            char = text[index]
+            if quote:
+                if escaped:
+                    escaped = False
+                elif char == "\\\\":
+                    escaped = True
+                elif char == quote:
+                    quote = None
+                continue
+            if char in ("'", '"', "`"):
+                quote = char
+            elif char == "(":
+                depth += 1
+            elif char == ")":
+                depth -= 1
+                if depth == 0:
+                    call = text[opening + 1:index]
+                    return bool(re.search(rf"\\b{re.escape(variable)}\\b", call))
+        return False
+
+    # Shell commands have no call parentheses; constrain correlation to that command line.
+    line_end = text.find("\\n", start)
+    if line_end < 0:
+        line_end = len(text)
+    command = text[start:line_end]
+    return bool(re.search(rf"\\b{re.escape(variable)}\\b", command))
+
+
 def scan_text(repository: str, path: str, text: str) -> list[Finding]:
     findings: list[Finding] = []
     seen: set[tuple[str, int]] = set()
