@@ -12,7 +12,7 @@ from .contributions import fetch_contributions
 from .github_client import Coverage, GitHubAPIError, GitHubClient
 from .report import print_terminal, write_html, write_json
 from .scanner import Finding, SEVERITY_RANK, deduplicate, is_text_candidate, scan_text
-from .scoring import score_account
+from .scoring import INFORMATIONAL_RULE_IDS, score_account
 
 
 SPECIAL_PATHS = {
@@ -34,6 +34,10 @@ def _repo_score(findings: list[Finding], has_readme: bool, has_license: bool, ha
     penalty = {"CRITICAL": 30, "HIGH": 14, "MEDIUM": 5, "LOW": 2, "INFO": 0}
     hits: dict[str, int] = {}
     for finding in findings:
+        # Keep capability/context signals visible in the report, but do not penalize
+        # them unless a stronger correlated behavior is detected.
+        if finding.rule_id in INFORMATIONAL_RULE_IDS:
+            continue
         count = hits.get(finding.rule_id, 0)
         factor = 1.0 if count == 0 else 0.4
         score -= round(penalty[finding.severity] * factor)
