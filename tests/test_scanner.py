@@ -260,3 +260,30 @@ fetch("https://metrics.example.invalid/event", {
     findings = scan_text("owner/repo", "login.js", code)
     assert "SENSITIVE_FORM_TO_NETWORK" not in ids(findings)
     assert "SECRET_TO_NETWORK" not in ids(findings)
+
+
+def test_sensitive_variable_mentioned_only_in_network_call_comment_is_not_exfiltration():
+    code = '''
+const password = document.querySelector("#password").value;
+fetch("https://metrics.example.invalid/event", {
+  method: "POST",
+  body: JSON.stringify({ event: "login_view" /* password intentionally omitted */ })
+});
+'''
+    findings = scan_text("owner/repo", "login.js", code)
+    assert "SENSITIVE_FORM_TO_NETWORK" not in ids(findings)
+    assert "SECRET_TO_NETWORK" not in ids(findings)
+
+
+def test_sensitive_variable_in_line_comment_is_not_exfiltration():
+    code = '''
+const password = document.querySelector("#password").value;
+fetch("https://metrics.example.invalid/event", {
+  method: "POST",
+  body: JSON.stringify({ event: "login_view" // password is not sent
+  })
+});
+'''
+    findings = scan_text("owner/repo", "login.js", code)
+    assert "SENSITIVE_FORM_TO_NETWORK" not in ids(findings)
+    assert "SECRET_TO_NETWORK" not in ids(findings)
