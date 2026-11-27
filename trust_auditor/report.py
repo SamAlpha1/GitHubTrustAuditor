@@ -44,6 +44,19 @@ def write_json(report: dict[str, Any], path: str) -> None:
     Path(path).write_text(json.dumps(serializable_report(report), indent=2, ensure_ascii=False), encoding="utf-8")
 
 
+def coverage_breakdown(coverage: dict[str, Any]) -> dict[str, int]:
+    """Explain candidate-file coverage without conflating skipped and limit-excluded files."""
+    seen = max(0, int(coverage.get("files_seen", 0) or 0))
+    scanned = max(0, int(coverage.get("files_scanned", 0) or 0))
+    skipped = max(0, int(coverage.get("files_skipped", 0) or 0))
+    return {
+        "candidate_files": seen,
+        "scanned_files": scanned,
+        "unreadable_or_unavailable": skipped,
+        "excluded_by_file_limit": max(0, seen - scanned - skipped),
+    }
+
+
 def _repo_risk(findings: list[Finding]) -> str:
     severities = {f.severity for f in findings}
     if "CRITICAL" in severities:
@@ -63,11 +76,19 @@ def print_terminal(report: dict[str, Any]) -> None:
     verdict = score["verdict"]
     console.print(f"\n[bold]GitHub Trust Auditor — {report['username']}[/bold]")
     coverage = report["coverage"]
+    breakdown = coverage_breakdown(coverage)
     console.print(
         f"Coverage: {coverage['public_repos']} public, {coverage['private_repos']} private; "
-        f"{coverage['files_scanned']}/{coverage['files_seen']} candidate files scanned"
+        f"{breakdown['scanned_files']}/{breakdown['candidate_files']} candidate files scanned"
         + (" [yellow](PARTIAL)[/yellow]" if coverage.get("partial") else "")
     )
+    console.print(
+        "Files not scanned: "
+        f"{breakdown['unreadable_or_unavailable']} unreadable/unavailable; "
+        f"{breakdown['excluded_by_file_limit']} excluded by per-repository file limit."
+    )
+    for note in coverage.get("notes") or []:
+        console.print(Text(f"Coverage note: {note}"))
 
     score_table = Table(title="Trust score", show_header=True, header_style="bold")
     score_table.add_column("Category")
@@ -164,6 +185,21 @@ def write_html(report: dict[str, Any], path: str) -> None:
                 f"<td><code>{html.escape(f['evidence'])}</code></td>"
                 "</tr>"
             )
+    coverage = data.get("coverage", {})
+    breakdown = coverage_breakdown(coverage)
+    coverage_notes = "".join(
+        f"<li>{html.escape(str(note))}</li>" for note in (coverage.get("notes") or [])
+    )
+    coverage_html = (
+        "<p>"
+        f"Status: <strong>{'PARTIAL' if coverage.get('partial') else 'COMPLETE'}</strong> · "
+        f"Candidate files: {breakdown['candidate_files']} · "
+        f"Scanned: {breakdown['scanned_files']} · "
+        f"Unreadable/unavailable: {breakdown['unreadable_or_unavailable']} · "
+        f"Excluded by file limit: {breakdown['excluded_by_file_limit']}"
+        "</p>"
+        + (f"<ul>{coverage_notes}</ul>" if coverage_notes else "<p>No coverage exceptions reported.</p>")
+    )
     critical_banner = "<div class='alarm'>🚨 CRITICAL SECURITY ALARM — DO NOT RUN FLAGGED CODE OR ENTER WALLET/AUTH SECRETS.</div>" if score["verdict"] == "CRITICAL" else ""
     page = f"""<!doctype html>
 <html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>
@@ -180,7 +216,7 @@ small{{color:#8b949e}}
 <div class='card'><h2>{html.escape(score['verdict'])} — {score['total']}/100</h2>
 <p>Security {score['security']}/60 · Hygiene {score['hygiene']}/20 · History {score['history']}/12 · Contributions {score['contributions']}/8</p>
 <p>{html.escape(score['recommendation'])}</p></div>
-<div class='card'><h2>Coverage</h2><pre>{html.escape(json.dumps(data['coverage'], indent=2))}</pre></div>
+<div class='card'><h2>Coverage</h2>{coverage_html}</div>
 <div class='card'><h2>Repositories</h2><table><thead><tr><th>Repository</th><th>Visibility</th><th>Files</th><th>Findings</th><th>Risk</th></tr></thead><tbody>{''.join(rows)}</tbody></table></div>
 <div class='card'><h2>Findings</h2><table><thead><tr><th>Severity</th><th>Rule</th><th>Repository</th><th>Location</th><th>Summary</th><th>Evidence</th></tr></thead><tbody>{''.join(finding_rows) or '<tr><td colspan=6>No findings.</td></tr>'}</tbody></table></div>
 <div class='card'><h2>Contribution graph</h2><pre>{html.escape(json.dumps(data.get('contributions', {}), indent=2))}</pre><small>Contribution activity is a minor reputation signal only and never overrides security findings.</small></div>
