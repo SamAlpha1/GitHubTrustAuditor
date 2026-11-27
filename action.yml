@@ -17,6 +17,10 @@ inputs:
     description: Optional branch, tag, or commit SHA for repository-only scans
     required: false
     default: ''
+  fail-on:
+    description: Risk level that fails the Action: critical, high, caution, or never
+    required: false
+    default: critical
   max-files:
     description: Maximum candidate text files scanned per repository
     required: false
@@ -34,7 +38,7 @@ outputs:
     description: Path to the generated HTML report
     value: ${{ steps.audit.outputs.report-html }}
   exit-code:
-    description: Auditor exit code (0 clean/complete, 1 partial/error, 2 critical)
+    description: Auditor exit code (0 below threshold, 1 partial/error, 2 threshold reached)
     value: ${{ steps.audit.outputs.exit-code }}
 
 runs:
@@ -58,6 +62,7 @@ runs:
         ACTION_PATH: ${{ github.action_path }}
         AUDIT_TARGET: ${{ inputs.username }}
         AUDIT_REF: ${{ inputs.ref }}
+        AUDIT_FAIL_ON: ${{ inputs.fail-on }}
         AUDIT_MAX_FILES: ${{ inputs.max-files }}
         AUDIT_MAX_FILE_SIZE: ${{ inputs.max-file-size }}
       run: |
@@ -69,6 +74,7 @@ runs:
         python "$ACTION_PATH/auditor.py" "$AUDIT_TARGET" \
           --max-files "$AUDIT_MAX_FILES" \
           --max-file-size "$AUDIT_MAX_FILE_SIZE" \
+          --fail-on "$AUDIT_FAIL_ON" \
           "${REF_ARGS[@]}" \
           --json "$GITHUB_WORKSPACE/github-trust-audit.json" \
           --html "$GITHUB_WORKSPACE/github-trust-audit.html" \
@@ -81,7 +87,7 @@ runs:
         echo "report-html=$GITHUB_WORKSPACE/github-trust-audit.html" >> "$GITHUB_OUTPUT"
 
         if [ "$code" -eq 2 ]; then
-          echo "::error::GitHub Trust Auditor detected critical security findings."
+          echo "::error::GitHub Trust Auditor reached the configured $AUDIT_FAIL_ON risk threshold."
           exit 2
         fi
 
