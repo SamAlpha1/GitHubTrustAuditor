@@ -45,7 +45,8 @@ jobs:
 | Input | Required | Default | Description |
 |---|---:|---:|---|
 | `username` | yes | — | GitHub account (`octocat`) or one repository (`owner/repository`) to audit |
-| `github-token` | no | empty | Optional read-only token for higher API limits |\n| `ref` | no | default branch | Branch, tag, or commit SHA; applies only to repository-only scans |
+| `github-token` | no | empty | Optional read-only token for higher API limits |
+| `ref` | no | default branch | Branch, tag, or commit SHA; applies only to repository-only scans |
 | `max-files` | no | `350` | Maximum candidate text files per repository |
 | `max-file-size` | no | `1000000` | Maximum text blob size in bytes |
 
