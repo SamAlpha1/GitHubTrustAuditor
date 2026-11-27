@@ -10,10 +10,21 @@ All notable changes to GitHub Trust Auditor are documented here.
 - Exact candidate-file coverage counts and explicit partial status when candidate text files cannot be decoded.
 - Reusable Action support for scanning a selected repository branch, tag, or commit SHA.
 - A read-only pull-request, main-branch push, and weekly scheduled audit workflow; pull-request source is fetched through the GitHub API and never checked out or executed.
-- Safer composite-action argument handling through environment variables.
-- Prevent detector regex definitions and comments from being mistaken for sensitive-data-to-network flows.
-- Add configurable CLI and reusable Action failure thresholds: `critical`, `high`, `caution`, or `never`.
+- Configurable CLI and reusable Action failure thresholds: `critical`, `high`, `caution`, or `never`.
+- Bilingual downloadable/shareable score cards with a 1200×630 export and report/coverage links.
+- Regression tests for benign GitHub token environment access, same-origin POSTs, and ordinary share clipboard helpers, while retaining alerts for sensitive environment variables, external POSTs, and wallet-address replacement.
 
+### Changed
+- Reduced scanner false positives by requiring stronger context and linked evidence for sensitive-data and outbound-network findings.
+- Aligned account and repository scoring with context-aware informational signals.
+- Expanded CI checks for YAML validity and generated score-card markers.
+- Expanded end-to-end smoke testing of the local reusable Action, including account and pinned repository-revision scans.
+
+### Validation
+- Latest main-branch CI run passed.
+- Latest self-audit run passed.
+- GitHub Pages build and deployment passed.
+- Reusable Action smoke test passed and verified non-empty JSON and HTML reports.
 
 ## [1.0.0] - 2026-09-03
 
