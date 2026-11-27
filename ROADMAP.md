@@ -9,14 +9,15 @@ Public roadmap for high-value improvements. This roadmap reflects the current `m
 - Configurable CLI and Action failure thresholds: `critical`, `high`, `caution`, or `never`.
 - Read-only pull-request auditing through the GitHub API; untrusted PR code is not checked out or executed.
 - Bilingual, downloadable/shareable audit score cards with direct report and scan links.
+- Local, clearable score history with the latest ten results retained in the browser only.
 - Regression coverage for benign scanner capabilities and genuinely suspicious external POST, sensitive environment access, wallet-address clipboard replacement, and sensitive-data source-to-network-sink correlation (including browser password fields, nested payloads, bounded local variable aliases, and unrelated nearby network calls).
 - CI validation for Python tests, YAML workflows, CLI entry points, Pages score-card output, and reusable Action report generation.
 
 ## Near term
 
-- Score history and side-by-side comparison across repeat audits.
+- Side-by-side comparison across repeat audits.
 - Expand false-positive and false-negative regression fixtures using reviewed, reproducible samples.
-- Improve report coverage explanations and make partial scans easier to interpret.
+- Show scan-completion percentage alongside candidate, scanned, unreadable/unavailable, and file-limit-excluded counts in terminal and HTML reports.
 - Publish a new tested Action release and keep the stable `v1` tag aligned with that release.
 
 ## Next
