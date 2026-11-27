@@ -78,6 +78,7 @@ RULES: tuple[Rule, ...] = (
 # Only actual sensitive retrieval expressions count as sources; UI copy and generic
 # references to clipboard/password are not proof of collection.
 SENSITIVE_SOURCE = _rx(r"(?:\binput\s*\([^)]*(?:private[_ -]?key|secret[_ -]?key|seed[_ -]?phrase|mnemonic|password|passphrase|api[_ -]?key|auth[_ -]?token)|\bprompt\s*\([^)]*(?:private[_ -]?key|secret[_ -]?key|seed[_ -]?phrase|mnemonic|password|passphrase|api[_ -]?key|auth[_ -]?token)|(?:process\.env|os\.getenv|getenv)\s*\(?[^)\n]*(?:PRIVATE_KEY|SEED|MNEMONIC|PASSWORD|TOKEN|SECRET|API_KEY)|localStorage\.getItem\s*\([^)]*(?:token|auth|secret|key)|(?:document\.)?(?:querySelector|getElementById)\s*\([^)]{0,120}(?:password|passphrase|private[_ -]?key|secret[_ -]?key|seed|mnemonic|api[_ -]?key|auth[_ -]?token)[^)]*\)\s*(?:\.value|\[['"]value['"]\])|(?:form\.)?elements\s*\[[^]]{0,80}(?:password|passphrase|private[_ -]?key|secret[_ -]?key|seed|mnemonic|api[_ -]?key|auth[_ -]?token)[^]]*\]\s*\.value|document\.cookie|(?:navigator\.)?clipboard\.readText\s*\()")
+BROWSER_SECRET_FIELD_SOURCE = _rx(r"(?:document\.)?(?:querySelector|getElementById)\s*\([^)]{0,120}(?:password|passphrase|private[_ -]?key|secret[_ -]?key|seed|mnemonic|api[_ -]?key|auth[_ -]?token)[^)]*\)\s*(?:\.value|\[['"]value['"]\])|(?:form\.)?elements\s*\[[^]]{0,80}(?:password|passphrase|private[_ -]?key|secret[_ -]?key|seed|mnemonic|api[_ -]?key|auth[_ -]?token)[^]]*\]\s*\.value")
 NETWORK_SINK = _rx(r"(?:requests\.post|axios\.post|fetch\s*\(|http\.post|https\.request|webhook|api\.telegram\.org|discord(?:app)?\.com/api/webhooks|socket\.send|sendall\(|curl\s|Invoke-RestMethod|Invoke-WebRequest)")
 SUSPICIOUS_INSTALL = _rx(r"(?:curl|wget|powershell|Invoke-WebRequest|bash\s+-c|sh\s+-c|node\s+-e|python\s+-c)")
 
@@ -183,15 +184,18 @@ def scan_text(repository: str, path: str, text: str) -> list[Finding]:
         sources = []
         for assignment in assignments.finditer(text):
             if SENSITIVE_SOURCE.search(assignment.group(2)) and not _is_detector_definition(text, assignment):
-                sources.append((assignment.group(1), assignment.start()))
+                sources.append((assignment.group(1), assignment.start(), bool(BROWSER_SECRET_FIELD_SOURCE.search(assignment.group(2)))))
         sinks = [m for m in NETWORK_SINK.finditer(text) if not _is_detector_definition(text, m)]
-        for variable, source_position in sources:
+        for variable, source_position, browser_form_source in sources:
             for sink in sinks:
                 call_window = text[sink.start():sink.start() + 1200]
                 if re.search(rf"\b{re.escape(variable)}\b", call_window):
                     source_line = _line_number(text, source_position)
                     if ("SECRET_TO_NETWORK", source_line) not in seen:
-                        findings.append(Finding("SECRET_TO_NETWORK", "CRITICAL", "possible-exfiltration", repository, path, source_line, "A retrieved sensitive value is referenced by an outbound network call", "[REDACTED SENSITIVE FLOW CONTEXT]", "high"))
+                        if browser_form_source:
+                            findings.append(Finding("SENSITIVE_FORM_TO_NETWORK", "HIGH", "credential-transmission", repository, path, source_line, "A password/secret form value is sent to a network call; verify the destination is an intended authentication endpoint", "[REDACTED SENSITIVE FLOW CONTEXT]", "medium"))
+                        else:
+                            findings.append(Finding("SECRET_TO_NETWORK", "CRITICAL", "possible-exfiltration", repository, path, source_line, "A retrieved sensitive value is referenced by an outbound network call", "[REDACTED SENSITIVE FLOW CONTEXT]", "high"))
                         seen.add(("SECRET_TO_NETWORK", source_line))
                     break
 
