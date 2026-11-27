@@ -1,32 +1,38 @@
 # GitHub Trust Auditor Roadmap
 
-Public roadmap for high-value improvements.
+Public roadmap for high-value improvements. This roadmap reflects the current `main` branch.
 
 ## Completed
 
-- Repository-only CLI scan mode for `owner/repository` and GitHub repository URLs, with explicit partial-coverage reporting.
-- Reusable Action support for pull-request head revisions, pushes, and scheduled repository audits, with read-only permissions and no PR-code checkout.
-- Configurable Action failure thresholds for Critical, High Risk, Caution, or never.
+- Repository-only CLI scans for `owner/repository` and GitHub repository URLs, with explicit partial-coverage reporting.
+- Reusable GitHub Action for account and repository-revision audits, including pull-request heads, main-branch pushes, and scheduled audits.
+- Configurable CLI and Action failure thresholds: `critical`, `high`, `caution`, or `never`.
+- Read-only pull-request auditing through the GitHub API; untrusted PR code is not checked out or executed.
+- Bilingual, downloadable/shareable audit score cards with direct report and scan links.
+- Regression coverage for benign scanner capabilities and for genuinely suspicious external POST, sensitive environment access, and wallet-address clipboard replacement patterns.
+- CI validation for Python tests, YAML workflows, CLI entry points, Pages score-card output, and reusable Action report generation.
 
 ## Near term
 
-- Exportable/shareable result cards
-- Better score history and comparison UX
-- More false-positive regression fixtures
+- Score history and side-by-side comparison across repeat audits.
+- Expand false-positive and false-negative regression fixtures using reviewed, reproducible samples.
+- Improve report coverage explanations and make partial scans easier to interpret.
+- Publish a new tested Action release and keep the stable `v1` tag aligned with that release.
 
 ## Next
 
-- Browser extension shortcut from GitHub profile/repository pages
-- Optional report export formats
-- Broader forge support where public APIs and permissions allow it
-- More community-contributed static-analysis rules
+- Browser extension shortcut from GitHub profile and repository pages.
+- Optional report export formats beyond JSON and HTML.
+- Broader forge support where public APIs and permissions allow it.
+- Community-contributed static-analysis rules with fixtures and documented evidence requirements.
 
 ## Principles
 
-- Defensive static analysis only
-- Never execute target repository code
-- Security evidence outranks social/reputation signals
-- No real secrets in fixtures or reports
-- Risk labels describe observable technical signals, not a person's intent or identity
+- Defensive static analysis only.
+- Never execute target repository code.
+- Security evidence outranks social/reputation signals.
+- No real secrets in fixtures or reports.
+- Risk labels describe observable technical signals, not a person's intent or identity.
+- Prefer reproducible evidence and regression tests over activity or repository-count inflation.
 
 Maintained by [SamAlpha1](https://github.com/SamAlpha1) · [@samalpha_](https://x.com/samalpha_)
