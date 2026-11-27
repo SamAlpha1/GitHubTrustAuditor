@@ -46,7 +46,8 @@ jobs:
 |---|---:|---:|---|
 | `username` | yes | — | GitHub account (`octocat`) or one repository (`owner/repository`) to audit |
 | `github-token` | no | empty | Optional read-only token for higher API limits |
-| `ref` | no | default branch | Branch, tag, or commit SHA; applies only to repository-only scans |\n| `fail-on` | no | `critical` | Fail at `critical`, `high`, or `caution`; use `never` to disable risk-based failure |
+| `ref` | no | default branch | Branch, tag, or commit SHA; applies only to repository-only scans |
+| `fail-on` | no | `critical` | Fail at `critical`, `high`, or `caution`; use `never` to disable risk-based failure |
 | `max-files` | no | `350` | Maximum candidate text files per repository |
 | `max-file-size` | no | `1000000` | Maximum text blob size in bytes |
 
