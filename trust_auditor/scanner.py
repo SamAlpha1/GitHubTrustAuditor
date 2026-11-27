@@ -154,7 +154,7 @@ def scan_text(repository: str, path: str, text: str) -> list[Finding]:
     # A proximity-only match is not data flow. Require the retrieved value's
     # variable name to appear inside an outbound network call.
     if not is_test_fixture and not is_documentation:
-        assignments = re.compile(r"(?im)^\\s*(?:(?:const|let|var)\\s+)?([A-Za-z_$][\\w$]*)\\s*=\\s*([^;\\n]{0,400})")
+        assignments = re.compile(r"(?im)^\s*(?:(?:const|let|var)\s+)?([A-Za-z_$][\w$]*)\s*=\s*([^;\n]{0,400})")
         sources = []
         for assignment in assignments.finditer(text):
             if SENSITIVE_SOURCE.search(assignment.group(2)) and not _is_detector_definition(text, assignment):
@@ -163,7 +163,7 @@ def scan_text(repository: str, path: str, text: str) -> list[Finding]:
         for variable, source_position in sources:
             for sink in sinks:
                 call_window = text[sink.start():sink.start() + 1200]
-                if re.search(rf"\\b{re.escape(variable)}\\b", call_window):
+                if re.search(rf"\b{re.escape(variable)}\b", call_window):
                     source_line = _line_number(text, source_position)
                     if ("SECRET_TO_NETWORK", source_line) not in seen:
                         findings.append(Finding("SECRET_TO_NETWORK", "CRITICAL", "possible-exfiltration", repository, path, source_line, "A retrieved sensitive value is referenced by an outbound network call", "[REDACTED SENSITIVE FLOW CONTEXT]", "high"))
