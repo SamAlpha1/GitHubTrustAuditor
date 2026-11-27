@@ -686,3 +686,18 @@ html[dir="rtl"] .input-wrap input { padding: 0 4px 0 16px; }
   .heatmap { gap: 2px; grid-auto-rows: 6px; }
   .support-card { padding: 18px; }
 }
+
+.share-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin: 14px 0 4px;
+}
+.share-card-actions .ghost-button {
+  cursor: pointer;
+  font: inherit;
+  background: #fff;
+}
+@media (max-width: 620px) {
+  .share-card-actions { justify-content: stretch; }
+  .share-card-actions .ghost-button { width: 100%; }
+}
