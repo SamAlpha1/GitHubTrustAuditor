@@ -71,7 +71,8 @@ function gtaScoreCardCoverage(r){
  const unavailable=Number(r?.score?.unavailable_repos??repos.filter(x=>x?.scan_status==='unavailable').length)||0;
  const total=Math.max(repos.length,scanned+unavailable);
  const files=repos.reduce((n,x)=>n+(Number(x?.files_scanned)||0),0);
- return {scanned,total,files,partial:!!r?.coverage?.partial||!!r?.score?.provisional||unavailable>0};
+ const completionRate=total>0?Math.max(0,Math.min(100,Math.round(scanned/total*100))):0;
+ return {scanned,total,files,completionRate,partial:!!r?.coverage?.partial||!!r?.score?.provisional||unavailable>0};
 }
 async function gtaDownloadScoreCard(r){
  const btn=document.getElementById('growthCardBtn');if(!btn)return;
@@ -92,7 +93,7 @@ async function gtaDownloadScoreCard(r){
   x.fillStyle='rgba(255,255,255,.12)';x.fillRect(570,205,560,270);
   parts.forEach((p,i)=>{const y=258+i*58,got=Number(p[1])||0;x.fillStyle='#dceaff';x.font='600 20px Arial';x.fillText(p[0],610,y);x.fillStyle='#fff';x.font='700 21px Arial';x.textAlign='right';x.fillText(got+'/'+p[2],1080,y);x.textAlign='left';x.fillStyle='rgba(255,255,255,.18)';x.fillRect(610,y+12,470,9);x.fillStyle='#69d5b1';x.fillRect(610,y+12,470*Math.max(0,Math.min(1,got/p[2])),9)});
   x.fillStyle='#c8dcf7';x.font='500 18px Arial';
-  const coverage='Coverage: '+cov.scanned+'/'+cov.total+' repositories scored'+(cov.partial?' • PARTIAL':' • complete')+' • '+cov.files+' files scanned';
+  const coverage='Coverage: '+cov.scanned+'/'+cov.total+' repositories ('+cov.completionRate+'% complete)'+(cov.partial?' • PARTIAL':' • complete')+' • '+cov.files+' files scanned';
   x.fillText(coverage,72,520);
   x.fillStyle='#9fc3f4';x.font='500 17px Arial';x.fillText('Open report: '+gtaShareUrl(),72,565);
   x.fillStyle='#8dbbff';x.font='700 17px Arial';x.textAlign='right';x.fillText('SamAlpha1',1128,595);x.textAlign='left';
@@ -136,7 +137,7 @@ function gtaPrefillFromQuery(){let u=new URLSearchParams(location.search).get('u
         'id="growthShareBar"', 'id="growthShareBtn"', 'id="growthXBtn"',
         'id="growthLinkBtn"', 'id="growthBadgeBtn"', 'id="growthCardBtn"', 'id="growth-boost-style"',
         'id="growth-meta-description"', 'function updateGrowthShare(r)',
-        'function gtaPrefillFromQuery()', 'function gtaDownloadScoreCard(r)', 'function gtaScoreCardCoverage(r)', 'updateGrowthShare(r);',
+        'function gtaPrefillFromQuery()', 'function gtaDownloadScoreCard(r)', 'function gtaScoreCardCoverage(r)', 'completionRate', "cov.completionRate+'% complete'", 'updateGrowthShare(r);',
         "c.width=1200;c.height=630", "['SECURITY',r?.score?.security,60]", "['REPO HYGIENE',r?.score?.hygiene,20]", "['HISTORY',r?.score?.history,12]", "['CONTRIBUTIONS',r?.score?.contributions,8]", "Coverage: ", "Open report: ", "c.toBlob(",
         'img.shields.io', 'https://x.com/intent/post', 'gtaPrefillFromQuery();'
     ]
