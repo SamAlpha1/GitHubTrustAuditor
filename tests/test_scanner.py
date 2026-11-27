@@ -129,3 +129,33 @@ def test_wallet_address_clipboard_write_remains_flagged():
     code = 'navigator.clipboard.writeText(replacementWalletAddress)'
     assert "CLIPBOARD_WRITE" in ids(scan_text("owner/repo", "wallet.js", code))
 
+
+
+def test_browser_password_form_sent_to_network_is_flagged_conservatively():
+    code = '''
+const password = document.querySelector("#password").value;
+fetch("https://api.example.invalid/login", {
+  method: "POST",
+  body: JSON.stringify({ password })
+});
+'''
+    findings = scan_text("owner/repo", "login.js", code)
+    form_flow = [f for f in findings if f.rule_id == "SENSITIVE_FORM_TO_NETWORK"]
+    assert form_flow
+    assert form_flow[0].severity == "HIGH"
+    assert form_flow[0].confidence == "medium"
+    assert form_flow[0].evidence == "[REDACTED SENSITIVE FLOW CONTEXT]"
+    assert "SECRET_TO_NETWORK" not in ids(findings)
+
+
+def test_ordinary_search_form_value_is_not_treated_as_secret_exfiltration():
+    code = '''
+const query = document.querySelector("#search").value;
+fetch("https://api.example.invalid/search", {
+  method: "POST",
+  body: JSON.stringify({ query })
+});
+'''
+    findings = scan_text("owner/repo", "search.js", code)
+    assert "SENSITIVE_FORM_TO_NETWORK" not in ids(findings)
+    assert "SECRET_TO_NETWORK" not in ids(findings)
