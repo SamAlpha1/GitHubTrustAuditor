@@ -163,12 +163,12 @@ def _network_call_references_variable(text: str, sink: re.Match[str], variable: 
             if quote:
                 if escaped:
                     escaped = False
-                elif char == "\\\\":
+                elif char == "\\":
                     escaped = True
                 elif char == quote:
                     quote = None
                 continue
-            if char in ("'", '"', "`"):
+            if char in ("'", '"', chr(96)):
                 quote = char
             elif char == "(":
                 depth += 1
@@ -176,15 +176,15 @@ def _network_call_references_variable(text: str, sink: re.Match[str], variable: 
                 depth -= 1
                 if depth == 0:
                     call = text[opening + 1:index]
-                    return bool(re.search(rf"\\b{re.escape(variable)}\\b", call))
+                    return bool(re.search(rf"\b{re.escape(variable)}\b", call))
         return False
 
     # Shell commands have no call parentheses; constrain correlation to that command line.
-    line_end = text.find("\\n", start)
+    line_end = text.find("\n", start)
     if line_end < 0:
         line_end = len(text)
     command = text[start:line_end]
-    return bool(re.search(rf"\\b{re.escape(variable)}\\b", command))
+    return bool(re.search(rf"\b{re.escape(variable)}\b", command))
 
 
 def scan_text(repository: str, path: str, text: str) -> list[Finding]:
