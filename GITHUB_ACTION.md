@@ -44,10 +44,25 @@ jobs:
 
 | Input | Required | Default | Description |
 |---|---:|---:|---|
-| `username` | yes | — | GitHub account to audit |
-| `github-token` | no | empty | Optional read-only token for higher API limits |
+| `username` | yes | — | GitHub account (`octocat`) or one repository (`owner/repository`) to audit |
+| `github-token` | no | empty | Optional read-only token for higher API limits |\n| `ref` | no | default branch | Branch, tag, or commit SHA; applies only to repository-only scans |
 | `max-files` | no | `350` | Maximum candidate text files per repository |
 | `max-file-size` | no | `1000000` | Maximum text blob size in bytes |
+
+## Scan one repository or a pull-request revision
+
+The same `username` input accepts a repository target. The optional `ref` input lets the Action inspect a specific commit, which is useful for pull-request checks:
+
+```yaml
+- name: Audit the pull-request revision
+  uses: SamAlpha1/GitHubTrustAuditor@main
+  with:
+    username: ${{ github.event.pull_request.head.repo.full_name }}
+    ref: ${{ github.event.pull_request.head.sha }}
+    github-token: ${{ github.token }}
+```
+
+Use a read-only token and do not check out or execute the pull-request code. The auditor retrieves source through GitHub's read-only API.
 
 ## Outputs
 
