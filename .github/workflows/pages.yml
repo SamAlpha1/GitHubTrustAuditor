@@ -85,7 +85,7 @@ jobs:
           grep -q 'function gtaDownloadScoreCard(r)' _site/index.html
           grep -q 'function gtaScoreCardCoverage(r)' _site/index.html
           grep -q 'completionRate' _site/index.html
-          grep -q "cov.completionRate+'% complete'" _site/index.html
+          grep -q "cov.completionRate+'% complete)'" _site/index.html
           grep -q 'c.width=1200;c.height=630' _site/index.html
           grep -q "['SECURITY',r?.score?.security,60]" _site/index.html
           grep -q "['REPO HYGIENE',r?.score?.hygiene,20]" _site/index.html
