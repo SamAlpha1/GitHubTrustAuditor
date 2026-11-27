@@ -75,7 +75,9 @@ RULES: tuple[Rule, ...] = (
     Rule("WORKFLOW_SECRET_SHELL", "HIGH", "ci-security", _rx(r"\$\{\{\s*secrets\.[A-Za-z0-9_]+\s*\}\}[^\n]{0,220}(?:curl|wget|Invoke-WebRequest|nc\s|ssh\s)"), "GitHub Actions secret may be passed to a network-capable command", "medium", True),
 )
 
-SENSITIVE_SOURCE = _rx(r"(?:private[_ -]?key|secret[_ -]?key|seed[_ -]?phrase|mnemonic|password|passphrase|api[_ -]?key|auth[_ -]?token|session[_ -]?cookie|document\.cookie|clipboard|(?:process\.env|os\.getenv)[^\n]*(?:KEY|SECRET|TOKEN|PASSWORD|MNEMONIC|SEED))")
+# Only actual sensitive retrieval expressions count as sources; UI copy and generic
+# references to clipboard/password are not proof of collection.
+SENSITIVE_SOURCE = _rx(r"(?:\binput\s*\([^)]*(?:private[_ -]?key|secret[_ -]?key|seed[_ -]?phrase|mnemonic|password|passphrase|api[_ -]?key|auth[_ -]?token)|\bprompt\s*\([^)]*(?:private[_ -]?key|secret[_ -]?key|seed[_ -]?phrase|mnemonic|password|passphrase|api[_ -]?key|auth[_ -]?token)|(?:process\.env|os\.getenv|getenv)\s*\(?[^)\n]*(?:PRIVATE_KEY|SEED|MNEMONIC|PASSWORD|TOKEN|SECRET|API_KEY)|localStorage\.getItem\s*\([^)]*(?:token|auth|secret|key)|document\.cookie|(?:navigator\.)?clipboard\.readText\s*\()")
 NETWORK_SINK = _rx(r"(?:requests\.post|axios\.post|fetch\s*\(|http\.post|https\.request|webhook|api\.telegram\.org|discord(?:app)?\.com/api/webhooks|socket\.send|sendall\(|curl\s|Invoke-RestMethod|Invoke-WebRequest)")
 SUSPICIOUS_INSTALL = _rx(r"(?:curl|wget|powershell|Invoke-WebRequest|bash\s+-c|sh\s+-c|node\s+-e|python\s+-c)")
 
@@ -128,9 +130,18 @@ def scan_text(repository: str, path: str, text: str) -> list[Finding]:
     findings: list[Finding] = []
     seen: set[tuple[str, int]] = set()
 
+    is_test_fixture = any(part.lower() in {"test", "tests", "fixtures", "testdata"} for part in PurePosixPath(path).parts) or PurePosixPath(path).name.lower().startswith(("test_", "test."))
+    is_documentation = PurePosixPath(path).suffix.lower() in {".md", ".rst", ".txt"}
+    literal_secret_rules = {"HARDCODED_EVM_KEY", "GITHUB_TOKEN_LITERAL", "AWS_ACCESS_KEY", "SLACK_TOKEN", "MNEMONIC_ASSIGNMENT"}
     for rule in RULES:
+        # Tests and prose contain illustrative attack examples and warning copy.
+        # Keep literal-secret checks, but do not score examples as live behavior.
+        if (is_test_fixture or is_documentation) and rule.rule_id not in literal_secret_rules:
+            continue
         hits = 0
         for match in rule.pattern.finditer(text):
+            if _is_detector_definition(text, match):
+                continue
             line = _line_number(text, match.start())
             if (rule.rule_id, line) in seen:
                 continue
@@ -140,21 +151,24 @@ def scan_text(repository: str, path: str, text: str) -> list[Finding]:
             if hits >= 8:
                 break
 
-    # Ignore comments and detector declarations: the scanner's own regex catalog
-    # contains both sensitive-data terms and network-sink terms by design.
-    sources = [m for m in SENSITIVE_SOURCE.finditer(text) if not _is_detector_definition(text, m)]
-    sinks = [m for m in NETWORK_SINK.finditer(text) if not _is_detector_definition(text, m)]
-    if sources and sinks:
-        for source in sources[:4]:
-            source_line = _line_number(text, source.start())
-            nearest = min(sinks, key=lambda m: abs(_line_number(text, m.start()) - source_line))
-            distance = abs(_line_number(text, nearest.start()) - source_line)
-            # Strong alarm only when the sensitive source and network sink are close enough to plausibly be linked.
-            severity = "CRITICAL" if distance <= 12 else "HIGH"
-            rule_id = "SECRET_TO_NETWORK" if severity == "CRITICAL" else "SENSITIVE_DATA_WITH_NETWORK"
-            if (rule_id, source_line) not in seen:
-                findings.append(Finding(rule_id, severity, "possible-exfiltration", repository, path, source_line, f"Sensitive-data source and outbound network sink appear in the same file ({distance} lines apart)", "[REDACTED SENSITIVE FLOW CONTEXT]", "high" if distance <= 6 else "medium"))
-                seen.add((rule_id, source_line))
+    # A proximity-only match is not data flow. Require the retrieved value's
+    # variable name to appear inside an outbound network call.
+    if not is_test_fixture and not is_documentation:
+        assignments = re.compile(r"(?im)^\\s*(?:(?:const|let|var)\\s+)?([A-Za-z_$][\\w$]*)\\s*=\\s*([^;\\n]{0,400})")
+        sources = []
+        for assignment in assignments.finditer(text):
+            if SENSITIVE_SOURCE.search(assignment.group(2)) and not _is_detector_definition(text, assignment):
+                sources.append((assignment.group(1), assignment.start()))
+        sinks = [m for m in NETWORK_SINK.finditer(text) if not _is_detector_definition(text, m)]
+        for variable, source_position in sources:
+            for sink in sinks:
+                call_window = text[sink.start():sink.start() + 1200]
+                if re.search(rf"\\b{re.escape(variable)}\\b", call_window):
+                    source_line = _line_number(text, source_position)
+                    if ("SECRET_TO_NETWORK", source_line) not in seen:
+                        findings.append(Finding("SECRET_TO_NETWORK", "CRITICAL", "possible-exfiltration", repository, path, source_line, "A retrieved sensitive value is referenced by an outbound network call", "[REDACTED SENSITIVE FLOW CONTEXT]", "high"))
+                        seen.add(("SECRET_TO_NETWORK", source_line))
+                    break
 
     name = PurePosixPath(path).name.lower()
     if name == "package.json":
