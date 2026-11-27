@@ -76,3 +76,16 @@ def test_bilingual_web_coverage_breakdown_shows_completion_rate():
     assert 'coverageRate: "درصد تکمیل اسکن"' in app
     assert "Math.round((scanned / seen) * 100)" in app
     assert '[tr("coverageRate"), `${formatNumber(completionRate)}%`]' in app
+
+
+def test_pages_score_history_is_local_bounded_and_clearable():
+    from pathlib import Path
+
+    patch = (Path(__file__).parents[1] / "growth_boost.py").read_text(encoding="utf-8")
+    assert "gta-score-history:" in patch
+    assert "localStorage.setItem(gtaHistoryKey(),JSON.stringify(rows.slice(0,10)))" in patch
+    assert "localStorage.removeItem(gtaHistoryKey())" in patch
+    assert "date.textContent=new Date(v.at).toLocaleString()" in patch
+    assert "score.textContent=(Number(v.score)||0)+'/100'" in patch
+    assert "body.textContent=''" in patch
+    assert "v.evidence" not in patch[patch.index("function gtaSaveScoreHistory"):patch.index("async function gtaCopy")]
