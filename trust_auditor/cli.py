@@ -236,6 +236,7 @@ def audit_repository_target(
     token: str | None = None,
     max_files: int = 350,
     max_file_size: int = 1_000_000,
+    ref: str | None = None,
 ) -> dict[str, Any]:
     full_name = parse_repository_target(target)
     if not full_name:
@@ -243,6 +244,8 @@ def audit_repository_target(
 
     client = GitHubClient(token=token)
     repo = client.get_json(f"/repos/{full_name}")
+    if ref:
+        repo = {**repo, "default_branch": ref}
     coverage = Coverage(
         public_repos=0 if repo.get("private") else 1,
         private_repos=1 if repo.get("private") else 0,
@@ -321,6 +324,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--token", help="GitHub token; prefer the GITHUB_TOKEN environment variable to avoid shell history exposure")
     parser.add_argument("--max-files", type=int, default=350, help="Maximum candidate text files per repository (default: 350)")
     parser.add_argument("--max-file-size", type=int, default=1_000_000, help="Maximum text blob size in bytes (default: 1 MB)")
+    parser.add_argument("--ref", help="Branch, tag, or commit SHA to scan (repository-only mode)")
     parser.add_argument("--json", dest="json_path", help="Write machine-readable JSON report")
     parser.add_argument("--html", dest="html_path", help="Write standalone HTML report")
     parser.add_argument("--quiet", action="store_true", help="Do not print the terminal tables")
@@ -340,8 +344,11 @@ def main(argv: list[str] | None = None) -> int:
                 token=args.token,
                 max_files=args.max_files,
                 max_file_size=args.max_file_size,
+                ref=args.ref,
             )
         else:
+            if args.ref:
+                raise ValueError("--ref can only be used with an owner/repository target")
             report = audit_account(
                 args.username,
                 include_private=args.include_private,

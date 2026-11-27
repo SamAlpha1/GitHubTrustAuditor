@@ -1,0 +1,33 @@
+name: Self Audit
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Audit this repository or the pull-request revision
+        uses: SamAlpha1/GitHubTrustAuditor@main
+        with:
+          username: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || '' }}
+          github-token: ${{ github.token }}
+
+      - name: Upload audit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: github-trust-audit
+          path: |
+            github-trust-audit.json
+            github-trust-audit.html
+          if-no-files-found: warn

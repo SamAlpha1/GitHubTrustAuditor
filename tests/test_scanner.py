@@ -45,3 +45,14 @@ def test_secret_values_are_redacted():
     critical = [f for f in findings if f.rule_id == "HARDCODED_EVM_KEY"]
     assert critical
     assert critical[0].evidence == "[REDACTED POTENTIAL SECRET]"
+
+
+
+def test_detector_definitions_do_not_self_trigger_exfiltration():
+    code = r'''
+SENSITIVE_SOURCE = _rx(r"(?:private[_ -]?key|secret[_ -]?key|seed[_ -]?phrase|mnemonic|password|passphrase|api[_ -]?key|auth[_ -]?token|session[_ -]?cookie|document\.cookie|clipboard)")
+NETWORK_SINK = _rx(r"(?:requests\.post|axios\.post|fetch\s*\(|http\.post|https\.request|webhook|api\.telegram\.org|discord(?:app)?\.com/api/webhooks)")
+'''
+    findings = scan_text("owner/repo", "scanner.py", code)
+    assert "SECRET_TO_NETWORK" not in ids(findings)
+    assert "SENSITIVE_DATA_WITH_NETWORK" not in ids(findings)

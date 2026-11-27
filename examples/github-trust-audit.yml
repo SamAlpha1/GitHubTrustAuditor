@@ -1,12 +1,12 @@
 name: GitHub Trust Audit
 
 on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+  schedule:
+    - cron: '17 6 * * 1'
   workflow_dispatch:
-    inputs:
-      username:
-        description: GitHub username to audit
-        required: true
-        default: SamAlpha1
 
 permissions:
   contents: read
@@ -15,17 +15,18 @@ jobs:
   audit:
     runs-on: ubuntu-latest
     steps:
-      - name: Run GitHub Trust Auditor
-        uses: SamAlpha1/GitHubTrustAuditor@v1
+      - name: Audit the repository or pull-request revision
+        uses: SamAlpha1/GitHubTrustAuditor@main
         with:
-          username: ${{ inputs.username }}
+          username: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || '' }}
           github-token: ${{ github.token }}
 
       - name: Upload audit reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: github-trust-audit-${{ inputs.username }}
+          name: github-trust-audit
           path: |
             github-trust-audit.json
             github-trust-audit.html

@@ -75,3 +75,38 @@ def test_repository_coverage_counts_only_text_candidates_and_marks_skips_partial
     assert coverage.files_skipped == 1
     assert coverage.partial is True
     assert result["complete"] is False
+
+
+
+def test_repository_only_scan_uses_requested_ref(monkeypatch):
+    from trust_auditor import cli
+
+    class RefClient:
+        seen_ref = None
+
+        def get_json(self, path):
+            assert path == "/repos/octocat/Hello-World"
+            return {
+                "full_name": "octocat/Hello-World",
+                "default_branch": "main",
+                "private": False,
+                "fork": False,
+                "license": {"key": "mit"},
+            }
+
+        def tree(self, full_name, ref):
+            self.seen_ref = ref
+            return []
+
+        @staticmethod
+        def sleep_briefly():
+            return None
+
+    fake = RefClient()
+    monkeypatch.setattr(cli, "GitHubClient", lambda token=None: fake)
+
+    report = cli.audit_repository_target("octocat/Hello-World", ref="0123456789abcdef")
+
+    assert fake.seen_ref == "0123456789abcdef"
+    assert report["scan_mode"] == "repository"
+    assert report["username"] == "octocat/Hello-World"

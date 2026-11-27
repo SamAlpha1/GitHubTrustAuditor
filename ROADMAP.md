@@ -5,11 +5,11 @@ Public roadmap for high-value improvements.
 ## Completed
 
 - Repository-only CLI scan mode for `owner/repository` and GitHub repository URLs, with explicit partial-coverage reporting.
+- Reusable Action support for pull-request head revisions and scheduled repository audits, with read-only permissions and no PR-code checkout.
 
 ## Near term
 
 - Exportable/shareable result cards
-- GitHub Action integration for pull requests and scheduled audits
 - Better score history and comparison UX
 - More false-positive regression fixtures
 
