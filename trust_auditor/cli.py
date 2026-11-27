@@ -325,6 +325,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-files", type=int, default=350, help="Maximum candidate text files per repository (default: 350)")
     parser.add_argument("--max-file-size", type=int, default=1_000_000, help="Maximum text blob size in bytes (default: 1 MB)")
     parser.add_argument("--ref", help="Branch, tag, or commit SHA to scan (repository-only mode)")
+    parser.add_argument(
+        "--fail-on",
+        choices=("critical", "high", "caution", "never"),
+        default="critical",
+        help="Exit with code 2 when the verdict reaches this risk level (default: critical)",
+    )
     parser.add_argument("--json", dest="json_path", help="Write machine-readable JSON report")
     parser.add_argument("--html", dest="html_path", help="Write standalone HTML report")
     parser.add_argument("--quiet", action="store_true", help="Do not print the terminal tables")
@@ -367,7 +373,15 @@ def main(argv: list[str] | None = None) -> int:
     if not args.quiet:
         print_terminal(report)
 
-    if report["score"]["verdict"] == "CRITICAL":
+    verdict_rank = {
+        "TRUSTED": 0,
+        "LOW RISK": 1,
+        "CAUTION": 2,
+        "HIGH RISK": 3,
+        "CRITICAL": 4,
+    }.get(report["score"]["verdict"], 4)
+    fail_threshold = {"never": 5, "critical": 4, "high": 3, "caution": 2}[args.fail_on]
+    if verdict_rank >= fail_threshold:
         return 2
     if report["coverage"].get("partial"):
         return 1
