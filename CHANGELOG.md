@@ -8,6 +8,9 @@ All notable changes to GitHub Trust Auditor are documented here.
 - Repository-only CLI scans using `owner/repository` or a GitHub repository URL.
 - Repository-only scoring excludes account-age, stars, forks, and contribution activity.
 - Exact candidate-file coverage counts and explicit partial status when candidate text files cannot be decoded.
+- Reusable Action support for scanning a selected repository branch, tag, or commit SHA.
+- A read-only pull-request and weekly scheduled audit workflow; pull-request source is fetched through the GitHub API and never checked out or executed.
+- Safer composite-action argument handling through environment variables.
 
 
 ## [1.0.0] - 2026-09-03
