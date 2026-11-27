@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from dataclasses import asdict
 from typing import Any
+from urllib.parse import urlparse
 
 from .contributions import fetch_contributions
 from .github_client import Coverage, GitHubAPIError, GitHubClient
@@ -103,13 +105,15 @@ def audit_repository(
         item for item in blobs
         if is_text_candidate(str(item.get("path", "")), int(item.get("size") or 0), max_file_size)
     ]
-    coverage.files_seen += len(candidates)
-    if len(candidates) > max_files:
+    candidate_count = len(candidates)
+    coverage.files_seen += candidate_count
+    if candidate_count > max_files:
         candidates = candidates[:max_files]
         complete = False
         coverage.partial = True
         coverage.notes.append(f"{full_name}: candidate file cap reached ({max_files})")
 
+    scanned_files = 0
     for item in candidates:
         path = str(item["path"])
         try:
@@ -122,8 +126,12 @@ def audit_repository(
             continue
         if text is None:
             coverage.files_skipped += 1
+            complete = False
+            coverage.partial = True
+            coverage.notes.append(f"{full_name}/{path}: candidate file could not be decoded as text")
             continue
         coverage.files_scanned += 1
+        scanned_files += 1
         findings.extend(scan_text(full_name, path, text))
         if path.lower() in SPECIAL_PATHS["readme"]:
             readme_text = text[:250_000]
@@ -179,8 +187,8 @@ def audit_repository(
         "forks": int(repo.get("forks_count") or 0),
         "open_issues": int(repo.get("open_issues_count") or 0),
         "language": repo.get("language"),
-        "files_scanned": sum(1 for item in candidates if is_text_candidate(str(item.get("path", "")), int(item.get("size") or 0), max_file_size)),
-        "files_seen": len(blobs),
+        "files_scanned": scanned_files,
+        "files_seen": candidate_count,
         "has_readme": has_readme,
         "has_license": has_license,
         "has_security": has_security,
@@ -188,6 +196,82 @@ def audit_repository(
         "complete": complete,
         "repo_score": score,
         "findings": findings,
+    }
+
+
+
+def parse_repository_target(value: str) -> str | None:
+    """Return owner/repo for a GitHub repository target, or None for an account target."""
+    raw = value.strip()
+    if not raw:
+        return None
+
+    if raw.lower().startswith(("github.com/", "www.github.com/")):
+        raw = "https://" + raw
+    if "://" in raw:
+        parsed = urlparse(raw)
+        if parsed.scheme not in {"http", "https"} or parsed.netloc.lower() not in {"github.com", "www.github.com"}:
+            raise ValueError("Only github.com repository URLs are accepted")
+        parts = [part for part in parsed.path.split("/") if part]
+        if len(parts) < 2:
+            return None
+        owner, repository = parts[:2]
+    elif "/" in raw:
+        parts = [part for part in raw.split("/") if part]
+        if len(parts) != 2:
+            raise ValueError("Use owner/repository or a GitHub repository URL")
+        owner, repository = parts
+    else:
+        return None
+
+    if not re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?", owner) or "--" in owner:
+        raise ValueError("Invalid GitHub repository owner")
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+", repository) or repository in {".", ".."}:
+        raise ValueError("Invalid GitHub repository name")
+    return f"{owner}/{repository}"
+
+
+def audit_repository_target(
+    target: str,
+    token: str | None = None,
+    max_files: int = 350,
+    max_file_size: int = 1_000_000,
+) -> dict[str, Any]:
+    full_name = parse_repository_target(target)
+    if not full_name:
+        raise ValueError("Enter a repository as owner/repository or a GitHub repository URL")
+
+    client = GitHubClient(token=token)
+    repo = client.get_json(f"/repos/{full_name}")
+    coverage = Coverage(
+        public_repos=0 if repo.get("private") else 1,
+        private_repos=1 if repo.get("private") else 0,
+    )
+    result = audit_repository(
+        client,
+        repo,
+        coverage,
+        max_files=max_files,
+        max_file_size=max_file_size,
+    )
+
+    # Repository-only scores intentionally exclude account age, stars, forks, and contribution activity.
+    score = score_account(
+        {},
+        [{**repo, "fork": True, "stargazers_count": 0, "forks_count": 0, "pushed_at": None}],
+        [result],
+        {"available": False},
+        coverage.partial,
+    ).to_dict()
+    return {
+        "schema_version": 1,
+        "scan_mode": "repository",
+        "username": full_name,
+        "profile": {"login": full_name.split("/", 1)[0]},
+        "coverage": asdict(coverage),
+        "contributions": {"available": False, "note": "Contribution activity is not part of repository-only scans."},
+        "score": score,
+        "repositories": [result],
     }
 
 
@@ -232,7 +316,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog="github-trust-auditor",
         description="Read-only GitHub account/repository security and trust auditor.",
     )
-    parser.add_argument("username", help="GitHub username to audit")
+    parser.add_argument("username", help="GitHub username or repository target (owner/repository or URL) to audit")
     parser.add_argument("--include-private", action="store_true", help="Include private repos visible to your authorized GITHUB_TOKEN")
     parser.add_argument("--token", help="GitHub token; prefer the GITHUB_TOKEN environment variable to avoid shell history exposure")
     parser.add_argument("--max-files", type=int, default=350, help="Maximum candidate text files per repository (default: 350)")
@@ -249,13 +333,22 @@ def main(argv: list[str] | None = None) -> int:
         print("Invalid scan limits", file=sys.stderr)
         return 1
     try:
-        report = audit_account(
-            args.username,
-            include_private=args.include_private,
-            token=args.token,
-            max_files=args.max_files,
-            max_file_size=args.max_file_size,
-        )
+        repository_target = parse_repository_target(args.username)
+        if repository_target:
+            report = audit_repository_target(
+                repository_target,
+                token=args.token,
+                max_files=args.max_files,
+                max_file_size=args.max_file_size,
+            )
+        else:
+            report = audit_account(
+                args.username,
+                include_private=args.include_private,
+                token=args.token,
+                max_files=args.max_files,
+                max_file_size=args.max_file_size,
+            )
     except (GitHubAPIError, ValueError) as exc:
         print(f"Audit failed: {exc}", file=sys.stderr)
         return 1

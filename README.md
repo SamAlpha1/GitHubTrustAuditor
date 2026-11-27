@@ -148,11 +148,23 @@ pip install -r requirements.txt
 python auditor.py octocat
 ```
 
-Export reports:
+Export account reports:
 
 ```bash
-python auditor.py octocat --json report.json --html report.html
+python auditor.py octocat --json account-report.json --html account-report.html
 ```
+
+### Scan one repository directly
+
+You can scan a single repository without auditing its owner's entire account:
+
+```bash
+python auditor.py owner/repository
+python auditor.py https://github.com/owner/repository
+python auditor.py owner/repository --json repo-report.json --html repo-report.html
+```
+
+Repository-only reports focus on that repository's source, configuration, install behavior, and documentation. Account age, stars, forks, and contribution activity are intentionally excluded from its score. If a candidate text file cannot be read, the report marks coverage as partial rather than silently counting it as scanned.
 
 ## Safety model
 
