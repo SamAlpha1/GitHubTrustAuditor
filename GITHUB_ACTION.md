@@ -89,9 +89,9 @@ Partial coverage still produces a warning when a report exists. API failures tha
 | `report-html` | Standalone HTML report path |
 | `exit-code` | Auditor exit code |
 
-Exit codes: `0` = complete with no Critical alarm, `1` = partial coverage or an audit/API problem, `2` = Critical security alarm.
+Exit codes: `0` = below the configured risk threshold, `1` = partial coverage or an audit/API problem, `2` = configured risk threshold reached.
 
-The Action treats a completed partial-coverage report as a workflow warning rather than a hard failure. Critical findings fail the Action. If no report can be generated, the Action also fails.
+The Action treats a completed partial-coverage report as a workflow warning rather than a hard failure. The `fail-on` setting controls which risk verdicts fail the Action. If no report can be generated, the Action also fails.
 
 ## Safety
 
