@@ -81,6 +81,17 @@ jobs:
           grep -q 'id="growthShareBtn"' _site/index.html
           grep -q 'id="growthXBtn"' _site/index.html
           grep -q 'id="growthBadgeBtn"' _site/index.html
+          grep -q 'id="growthCardBtn"' _site/index.html
+          grep -q 'function gtaDownloadScoreCard(r)' _site/index.html
+          grep -q 'function gtaScoreCardCoverage(r)' _site/index.html
+          grep -q 'c.width=1200;c.height=630' _site/index.html
+          grep -q "['SECURITY',r?.score?.security,60]" _site/index.html
+          grep -q "['REPO HYGIENE',r?.score?.hygiene,20]" _site/index.html
+          grep -q "['HISTORY',r?.score?.history,12]" _site/index.html
+          grep -q "['CONTRIBUTIONS',r?.score?.contributions,8]" _site/index.html
+          grep -q 'Coverage: ' _site/index.html
+          grep -q 'Open report: ' _site/index.html
+          grep -q 'c.toBlob(' _site/index.html
           grep -q 'function gtaPrefillFromQuery()' _site/index.html
           grep -q 'img.shields.io' _site/index.html
           grep -q 'og:title' _site/index.html
