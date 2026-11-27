@@ -47,3 +47,4 @@ jobs:
         run: |
           test -s github-trust-audit.json
           test -s github-trust-audit.html
+# Keep this workflow path-filtered so changes to the local action trigger an end-to-end consumer test.
