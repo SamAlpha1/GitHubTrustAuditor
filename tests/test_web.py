@@ -36,3 +36,34 @@ def test_to_jsonable_nested_dataclass():
         value: int
 
     assert to_jsonable({"x": [Example(3)]}) == {"x": [{"value": 3}]}
+
+
+
+def test_coverage_breakdown_separates_skipped_and_limit_excluded():
+    from trust_auditor.report import coverage_breakdown
+
+    assert coverage_breakdown({
+        "files_seen": 20,
+        "files_scanned": 12,
+        "files_skipped": 3,
+    }) == {
+        "candidate_files": 20,
+        "scanned_files": 12,
+        "unreadable_or_unavailable": 3,
+        "excluded_by_file_limit": 5,
+    }
+
+
+def test_coverage_breakdown_never_returns_negative_counts():
+    from trust_auditor.report import coverage_breakdown
+
+    assert coverage_breakdown({
+        "files_seen": 2,
+        "files_scanned": 4,
+        "files_skipped": 1,
+    }) == {
+        "candidate_files": 2,
+        "scanned_files": 4,
+        "unreadable_or_unavailable": 1,
+        "excluded_by_file_limit": 0,
+    }
