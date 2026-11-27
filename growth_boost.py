@@ -45,7 +45,8 @@ def main() -> None:
   <button id="growthLinkBtn" type="button">🔗 <span class="growth-en">Copy link</span><span class="growth-fa">کپی لینک</span></button>
   <button id="growthBadgeBtn" type="button">🏷 <span class="growth-en">Copy README badge</span><span class="growth-fa">کپی بج README</span></button>
   <button id="growthCardBtn" type="button">▣ <span class="growth-en">Download score card</span><span class="growth-fa">دانلود کارت امتیاز</span></button>
-</div>'''
+</div>
+<div id="growthHistory" class="growthHistory" hidden><div class="growthHistoryHead"><b><span class="growth-en">Local score history</span><span class="growth-fa">تاریخچه امتیاز محلی</span></b><button id="growthHistoryClear" type="button"><span class="growth-en">Clear</span><span class="growth-fa">پاک‌کردن</span></button></div><div id="growthHistoryBody" class="growthHistoryBody"></div><small><span class="growth-en">Stored only in this browser; latest 10 summaries.</span><span class="growth-fa">فقط در همین مرورگر؛ ۱۰ نتیجه آخر.</span></small></div>'''
     anchor = '<div id="score" class="orb overallScoreOrb">—</div>\n</div>'
     if 'id="growthShareBar"' not in s:
         if anchor not in s:
@@ -54,7 +55,7 @@ def main() -> None:
 
     css = r'''<style id="growth-boost-style">
 .growthShareBar{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:7px;margin-top:10px;padding:10px 12px;border:1px solid #cfe0f5;border-radius:14px;background:#fff}
-.growthShareBar[hidden]{display:none!important}.growthShareTitle{margin-right:auto;font-size:12px;color:#253956}.growthShareBar button{border:1px solid #c9d8ec;background:#f7faff;color:#10213d;border-radius:10px;padding:7px 10px;font-weight:850;cursor:pointer}.growthShareBar button:hover{background:#edf5ff}.growthShareBar button:disabled{opacity:.55;cursor:wait}.growth-fa{display:none}.fa-mode .growth-en{display:none!important}.fa-mode .growth-fa{display:inline!important}.fa-mode .growthShareTitle{margin-right:0;margin-left:auto;direction:rtl}
+.growthShareBar[hidden]{display:none!important}.growthShareTitle{margin-right:auto;font-size:12px;color:#253956}.growthShareBar button{border:1px solid #c9d8ec;background:#f7faff;color:#10213d;border-radius:10px;padding:7px 10px;font-weight:850;cursor:pointer}.growthShareBar button:hover{background:#edf5ff}.growthShareBar button:disabled{opacity:.55;cursor:wait}.growthHistory{grid-column:1/-1;width:100%;border-top:1px solid #e1e9f4;padding-top:9px;color:#253956}.growthHistory[hidden]{display:none!important}.growthHistoryHead{display:flex;justify-content:space-between;font-size:12px}.growthHistoryHead button{border:1px solid #d5deeb;background:#fff;border-radius:8px;padding:4px 8px}.growthHistoryBody{display:grid;gap:5px;margin:7px 0}.growthHistoryRow{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;font-size:11px;padding:6px 8px;background:#f6f9fd;border-radius:8px}.growthHistoryRow strong{font-size:13px}.growthHistoryDelta{font-weight:800}.growthHistory small{font-size:10px;color:#687991}.growth-fa{display:none}.fa-mode .growth-en{display:none!important}.fa-mode .growth-fa{display:inline!important}.fa-mode .growthShareTitle{margin-right:0;margin-left:auto;direction:rtl}
 @media(max-width:720px){.growthShareBar{justify-content:center}.growthShareTitle{width:100%;margin:0;text-align:center}.growthShareBar button{font-size:11px;padding:7px 8px}}
 </style>'''
     if 'id="growth-boost-style"' not in s:
@@ -102,10 +103,15 @@ async function gtaDownloadScoreCard(r){
  }catch(e){alert('Could not create score card: '+(e?.message||e))}
  finally{btn.disabled=false;btn.innerHTML=old}
 }
+function gtaHistoryKey(){return 'gta-score-history:'+gtaShareUser().toLowerCase()}
+function gtaSaveScoreHistory(r){const c=gtaScoreCardCoverage(r),item={at:new Date().toISOString(),score:Math.max(0,Math.min(100,Number(r?.score?.total)||0)),scanned:c.scanned,total:c.total,completionRate:c.completionRate};try{let rows=JSON.parse(localStorage.getItem(gtaHistoryKey())||'[]');if(!Array.isArray(rows))rows=[];rows.unshift(item);localStorage.setItem(gtaHistoryKey(),JSON.stringify(rows.slice(0,10)))}catch(_){}}
+function gtaRenderScoreHistory(){const wrap=document.getElementById('growthHistory'),body=document.getElementById('growthHistoryBody');if(!wrap||!body)return;let rows=[];try{rows=JSON.parse(localStorage.getItem(gtaHistoryKey())||'[]')}catch(_){}if(!Array.isArray(rows)||!rows.length){wrap.hidden=true;return}wrap.hidden=false;body.textContent='';rows.forEach((v,i)=>{const row=document.createElement('div');row.className='growthHistoryRow';const date=document.createElement('span');date.textContent=new Date(v.at).toLocaleString();const score=document.createElement('strong');score.textContent=(Number(v.score)||0)+'/100';const delta=document.createElement('span');delta.className='growthHistoryDelta';if(i===0&&rows[1]){const d=(Number(v.score)||0)-(Number(rows[1].score)||0);delta.textContent=(d>0?'+':'')+d+' vs previous'}else delta.textContent=(v.completionRate||0)+'% coverage';row.append(date,score,delta);body.appendChild(row)})}
 async function gtaCopy(text){try{await navigator.clipboard.writeText(text);return true}catch(_){return false}}
 function updateGrowthShare(r){
  const bar=document.getElementById('growthShareBar'); if(!bar)return; bar.hidden=false;
  const shareUrl=gtaShareUrl(), text=gtaShareText(r);
+ gtaSaveScoreHistory(r);gtaRenderScoreHistory();
+ const clear=document.getElementById('growthHistoryClear');if(clear)clear.onclick=()=>{try{localStorage.removeItem(gtaHistoryKey())}catch(_){}gtaRenderScoreHistory()};
  document.getElementById('growthShareBtn').onclick=async()=>{if(navigator.share){try{await navigator.share({title:'GitHub Trust Auditor',text,url:shareUrl});return}catch(_){}}await gtaCopy(`${text} ${shareUrl}`)};
  document.getElementById('growthXBtn').onclick=()=>window.open(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`,'_blank','noopener');
  document.getElementById('growthLinkBtn').onclick=()=>gtaCopy(shareUrl);
@@ -136,7 +142,7 @@ function gtaPrefillFromQuery(){let u=new URLSearchParams(location.search).get('u
     required = [
         'id="growthShareBar"', 'id="growthShareBtn"', 'id="growthXBtn"',
         'id="growthLinkBtn"', 'id="growthBadgeBtn"', 'id="growthCardBtn"', 'id="growth-boost-style"',
-        'id="growth-meta-description"', 'function updateGrowthShare(r)',
+        'id="growth-meta-description"', 'id="growthHistory"', 'id="growthHistoryClear"', 'function gtaSaveScoreHistory(r)', 'function gtaRenderScoreHistory()', 'latest 10 summaries.', 'function updateGrowthShare(r)',
         'function gtaPrefillFromQuery()', 'function gtaDownloadScoreCard(r)', 'function gtaScoreCardCoverage(r)', 'completionRate', "cov.completionRate+'% complete)'", 'updateGrowthShare(r);',
         "c.width=1200;c.height=630", "['SECURITY',r?.score?.security,60]", "['REPO HYGIENE',r?.score?.hygiene,20]", "['HISTORY',r?.score?.history,12]", "['CONTRIBUTIONS',r?.score?.contributions,8]", "Coverage: ", "Open report: ", "c.toBlob(",
         'img.shields.io', 'https://x.com/intent/post', 'gtaPrefillFromQuery();'
